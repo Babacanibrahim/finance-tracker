@@ -6,6 +6,17 @@ from functools import wraps
 
 app = Flask(__name__)
 
+app.secret_key="babacanfinans"
+
+app.config["MYSQL_HOST"]= "localhost"
+app.config["MYSQL_USER"]= "root"
+app.config["MYSQL_PASSWORD"]= ""
+app.config["MYSQL_DB"]= "finance_tracker"
+app.config["MYSQL_CURSORCLASS"]= "DictCursor"
+
+mysql = MySQL(app)
+
+
 # Yönlendirmeler
 @app.route("/index")
 def index():
