@@ -1,7 +1,46 @@
 {% extends "layout.html" %}
-
+{% from '/includes/formhelpers.html' import render_field %}
 {% block body %}
+
 <h2>Kayıt Ol</h2>
 <hr><hr>
 
-{% endblock body %}
+<form method="POST">
+  {{ form.hidden_tag() }}
+
+  <div class="form-group">
+    {{ form.username.label(class="form-label") }}
+    {{ form.username(class="form-control", id="username", placeholder="Kullanıcı adınızı girin") }}
+    {% for error in form.username.errors %}
+      <small class="text-danger">{{ error }}</small>
+    {% endfor %}
+  </div>
+
+  <div class="form-group mt-2">
+    {{ form.email.label(class="form-label") }}
+    {{ form.email(class="form-control", id="email", placeholder="E-posta adresinizi girin") }}
+    {% for error in form.email.errors %}
+      <small class="text-danger">{{ error }}</small>
+    {% endfor %}
+  </div>
+
+  <div class="form-group mt-2">
+    {{ form.password.label(class="form-label") }}
+    {{ form.password(class="form-control", id="password", placeholder="Parolanızı girin") }}
+    {% for error in form.password.errors %}
+      <small class="text-danger">{{ error }}</small>
+    {% endfor %}
+  </div>
+
+  <div class="form-group mt-2">
+    {{ form.confirm.label(class="form-label") }}
+    {{ form.confirm(class="form-control", id="confirm", placeholder="Parolanızı tekrar girin") }}
+    {% for error in form.confirm.errors %}
+      <small class="text-danger">{{ error }}</small>
+    {% endfor %}
+  </div>
+
+  <button type="submit" class="btn btn-primary mt-3">Kayıt Ol</button>
+</form>
+
+{% endblock %}

@@ -1,8 +1,9 @@
 from flask import Flask,render_template,flash,redirect,url_for,session,logging,request
 from flask_mysqldb import MySQL
-from wtforms import Form,StringField,TextAreaField,PasswordField,validators
+from wtforms import Form,StringField,TextAreaField,PasswordField,validators,ValidationError
 from passlib.hash import sha256_crypt
 from functools import wraps
+from flask_wtf import FlaskForm
 
 app = Flask(__name__)
 
@@ -16,10 +17,35 @@ app.config["MYSQL_CURSORCLASS"]= "DictCursor"
 
 mysql = MySQL(app)
 
+#Register Form
+class RegisterForm(FlaskForm):
+
+    #Custom Validators
+    def length_check_username(form, field):
+        if len(field.data) < 3:
+            raise ValidationError("En az 3 karakter olmalı.")
+        elif len(field.data) > 20:
+            raise ValidationError("En fazla 20 karakter olmalı.")
+        
+    def length_check_password(form, field):
+        if len(field.data) < 5:
+            raise ValidationError("En az 3 karakter olmalı.")
+        elif len(field.data) > 20 :
+            raise ValidationError("En fazla 5 karakter olmalı.")
+    
+    #Form
+    username=StringField("* Kullanıcı adınız :",validators=[length_check_username,validators.DataRequired(message="Kullanıcı adı boş olamaz.")])
+    email=StringField(" E posta :",validators=[validators.Email(message="Geçerli bir mail adresi giriniz.")])
+    password=PasswordField("* Parola :",validators=[validators.DataRequired(message="Parola kısmı boş olamaz."),length_check_password,validators.EqualTo("confirm",message="Lütfen parolalarınızı kontrol edin")])
+    confirm=PasswordField("* Parolanız tekrar :",validators=[validators.DataRequired()])
 
 # Yönlendirmeler
-@app.route("/index")
+@app.route("/")
 def index():
+    return render_template("index.html")
+
+@app.route("/index")
+def main_board():
     return render_template("index.html")
 
 @app.route("/about")
@@ -40,9 +66,32 @@ def login ():
     return render_template("login.html")
 
 #Register
-@app.route("/register")
+@app.route("/register",methods=["GET","POST"])
 def register():
-    return render_template("/register.html")    
+    form=RegisterForm(request.form)
+    if request.method=="POST" and form.validate():
+        cursor=mysql.connection.cursor()
+        query="INSERT INTO users (username , email , password) VALUES (%s,%s,%s)"
+        query_exist="SELECT * FROM users WHERE username=%s"
+
+        username=form.username.data
+        email=form.email.data
+        password=sha256_crypt.hash(form.username.data)
+
+        result=cursor.execute(query_exist,(username,))
+
+        if result>0:
+            flash("Böyle bir isme sahip kullanıcı mevcut. Şifrenizi unuttuysanız şifremi unuttum'la devam edebilirsiniz.","danger")
+            return render_template("register.html")
+    
+        else:
+            cursor.execute(query,(username,email,password))
+            mysql.connection.commit()
+            cursor.close()
+            flash("Kaydınız başarıyla oluşturuldu.","success")
+            return redirect(url_for("login"))
+    else:
+        return render_template("register.html",form=form)
 
 #Logout
 @app.route("/logout")
