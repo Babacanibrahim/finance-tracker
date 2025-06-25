@@ -1,7 +1,32 @@
 {% extends "layout.html" %}
-
+{% from '/includes/formhelpers.html' import render_field %}
 {% block body %}
-<br><br>
-<h3>Giriş Yap</h3>
+
+<h2>Giriş Yap</h2>
 <hr><hr>
-{% endblock body %}
+
+<form method="POST">
+  {{ form.hidden_tag() }}
+
+  <div class="form-group">
+    {{ form.username.label(class="form-label") }}
+    {{ form.username(class="form-control", id="username") }}
+    {% for error in form.username.errors %}
+      <small class="text-danger">{{ error }}</small>
+    {% endfor %}
+  </div>
+
+
+  <div class="form-group mt-2">
+    {{ form.password.label(class="form-label") }}
+    {{ form.password(class="form-control", id="password") }}
+    {% for error in form.password.errors %}
+      <small class="text-danger">{{ error }}</small>
+    {% endfor %}
+  </div>
+
+
+  <button type="submit" class="btn btn-primary mt-3">Giriş Yap</button>
+</form>
+
+{% endblock %}

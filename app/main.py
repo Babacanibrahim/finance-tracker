@@ -17,22 +17,29 @@ app.config["MYSQL_CURSORCLASS"]= "DictCursor"
 
 mysql = MySQL(app)
 
+#Custom Validators
+def length_check_username(form, field):
+    if len(field.data) < 3:
+        raise ValidationError("En az 3 karakter olmalı.")
+    elif len(field.data) > 20:
+        raise ValidationError("En fazla 20 karakter olmalı.")
+        
+def length_check_password(form, field):
+    if len(field.data) < 5:
+        raise ValidationError("En az 3 karakter olmalı.")
+    elif len(field.data) > 20 :
+        raise ValidationError("En fazla 5 karakter olmalı.")
+
+#Login Form
+class LoginForm(FlaskForm):
+    
+    #Form
+    username=StringField(" Kullanıcı adınız :",validators=[length_check_username,validators.DataRequired(message="Kullanıcı adı boş olamaz.")])
+    password=PasswordField(" Parola :",validators=[validators.DataRequired(message="Parola kısmı boş olamaz.")])
+
 #Register Form
 class RegisterForm(FlaskForm):
-
-    #Custom Validators
-    def length_check_username(form, field):
-        if len(field.data) < 3:
-            raise ValidationError("En az 3 karakter olmalı.")
-        elif len(field.data) > 20:
-            raise ValidationError("En fazla 20 karakter olmalı.")
-        
-    def length_check_password(form, field):
-        if len(field.data) < 5:
-            raise ValidationError("En az 3 karakter olmalı.")
-        elif len(field.data) > 20 :
-            raise ValidationError("En fazla 5 karakter olmalı.")
-    
+  
     #Form
     username=StringField("* Kullanıcı adınız :",validators=[length_check_username,validators.DataRequired(message="Kullanıcı adı boş olamaz.")])
     email=StringField(" E posta :",validators=[validators.Email(message="Geçerli bir mail adresi giriniz.")])
@@ -61,9 +68,31 @@ def expense():
     return render_template ("expense.html")
 
 #Login 
-@app.route ("/login")
+@app.route ("/login",methods=("GET","POST"))
 def login ():
-    return render_template("login.html")
+    form=LoginForm(request.form)
+    if request.method=="POST" and form.validate():
+        cursor=mysql.connection.cursor()
+        query="SELECT * FROM users WHERE username=%s"
+        result=cursor.execute(query,(form.username.data,))
+
+        if result>0:
+            user=cursor.fetchone()
+            if not sha256_crypt.verify(form.password.data, user["password"]):
+                flash("Şifreniz yanlış","danger")
+                cursor.close()
+                return render_template("login.html",form=form)
+            else:
+                flash("Giriş başarılı","success")
+                cursor.close()
+                return redirect(url_for("index"))
+                
+
+        else:
+            flash("Böyle bir kullanıcı adı bulunamadı.","danger")
+            cursor.close()
+    cursor.close()
+    return render_template("login.html",form=form)
 
 #Register
 @app.route("/register",methods=["GET","POST"])
@@ -76,7 +105,7 @@ def register():
 
         username=form.username.data
         email=form.email.data
-        password=sha256_crypt.hash(form.username.data)
+        password=sha256_crypt.hash(form.password.data)
 
         result=cursor.execute(query_exist,(username,))
 
@@ -96,7 +125,7 @@ def register():
 #Logout
 @app.route("/logout")
 def logout():
-    return render_template("/logout.html")    
+    return render_template("/logout.html")
 
 #Flask
 if __name__ == '__main__':
