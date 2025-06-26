@@ -17,6 +17,17 @@ app.config["MYSQL_CURSORCLASS"]= "DictCursor"
 
 mysql = MySQL(app)
 
+#Login Decorator
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "logged_in" in session:
+            return f(*args, **kwargs)
+        else:
+            flash("Bu sayfayı görüntülemek için yetkiniz yok veya giriş yapmamışsınız.","danger")
+            return redirect(url_for("login"))
+    return decorated_function
+
 #Custom Validators
 def length_check_username(form, field):
     if len(field.data) < 3:
@@ -60,10 +71,12 @@ def about():
     return render_template("about.html")
 
 @app.route("/income")
+@login_required
 def income():
     return render_template ("income.html")
 
 @app.route("/expense")
+@login_required
 def expense():
     return render_template ("expense.html")
 
@@ -72,18 +85,22 @@ def expense():
 def login ():
     form=LoginForm(request.form)
     if request.method=="POST" and form.validate():
+        username=form.username.data
+        password=form.password.data
         cursor=mysql.connection.cursor()
         query="SELECT * FROM users WHERE username=%s"
-        result=cursor.execute(query,(form.username.data,))
+        result=cursor.execute(query,(username,))
 
         if result>0:
             user=cursor.fetchone()
-            if not sha256_crypt.verify(form.password.data, user["password"]):
+            if not sha256_crypt.verify(password, user["password"]):
                 flash("Şifreniz yanlış","danger")
                 cursor.close()
                 return render_template("login.html",form=form)
             else:
                 flash("Giriş başarılı","success")
+                session["logged_in"]=True
+                session["username"]=username
                 cursor.close()
                 return redirect(url_for("index"))
                 
@@ -91,7 +108,6 @@ def login ():
         else:
             flash("Böyle bir kullanıcı adı bulunamadı.","danger")
             cursor.close()
-    cursor.close()
     return render_template("login.html",form=form)
 
 #Register
@@ -125,7 +141,8 @@ def register():
 #Logout
 @app.route("/logout")
 def logout():
-    return render_template("/logout.html")
+    session.clear()
+    return redirect(url_for("login"))
 
 #Flask
 if __name__ == '__main__':
