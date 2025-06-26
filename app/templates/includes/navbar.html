@@ -28,6 +28,7 @@
       </li>
     </ul>
     <ul class="navbar-nav ml-auto">
+    {% if "logged_in" in session %}
       <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" 
           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -40,14 +41,21 @@
         </div>
       </li>
       <li class="nav-item active">
+        <a class="nav-link" href="logout">Çıkış Yap <span class="sr-only">(current)</span></a>
+      </li>
+    
+    {% else %}
+      <li class="nav-item active">
         <a class="nav-link" href="login">Giriş Yap <span class="sr-only">(current)</span></a>
       </li>
-      <li class="nav-item active">
-        <a class="nav-link" href="#">Çıkış Yap <span class="sr-only">(current)</span></a>
-      </li>
+      
       <li class="nav-item active">
         <a class="nav-link" href="register">Kayıt Ol <span class="sr-only">(current)</span></a>
       </li>
+
+    {% endif %}
+      
+      
     </ul>
   </div>
 </nav>
