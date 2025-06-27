@@ -62,10 +62,6 @@ class RegisterForm(FlaskForm):
 def index():
     return render_template("index.html")
 
-@app.route("/index")
-def main_board():
-    return render_template("index.html")
-
 @app.route("/about")
 def about():
     return render_template("about.html")
@@ -79,6 +75,11 @@ def income():
 @login_required
 def expense():
     return render_template ("expense.html")
+
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    return render_template("dashboard.html")
 
 #Login 
 @app.route ("/login",methods=("GET","POST"))

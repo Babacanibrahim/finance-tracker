@@ -5,17 +5,22 @@
     padding-bottom: 1.8rem;
   }
   .custom-navbar .nav-link {
-    font-size: 1.3rem;  
+    font-size: 1.3rem;
+    color: black;  
     padding-top: 1.2rem;
     padding-bottom: 1.2rem;
   }
   .custom-navbar .navbar-brand {
     font-size: 1.8rem;
   }
+  .custom-navbar {
+  background-color: #3e5172;
+}
 </style>
 
-<nav class="navbar navbar-expand-lg navbar-light bg-light custom-navbar">
-  <a class="navbar-brand" href="index">Babacan Finans</a>
+<nav class="navbar navbar-expand-lg custom-navbar">
+
+  <a class="navbar-brand" href="/"><strong>Babacan Finans</strong></a>
   <button class="navbar-toggler" type="button" data-toggle="collapse" 
     data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" 
     aria-expanded="false" aria-label="Toggle navigation">
@@ -24,33 +29,35 @@
   <div class="collapse navbar-collapse" id="navbarNavDropdown">
     <ul class="navbar-nav">
       <li class="nav-item">
-        <a class="nav-link" href="about">Hakkımızda</a>
+        <a class="nav-link" style="font-weight: bold;" href="about">Hakkımızda</a>
       </li>
     </ul>
     <ul class="navbar-nav ml-auto">
     {% if "logged_in" in session %}
       <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" 
+        <a class="nav-link dropdown-toggle" href="#" style="font-weight: bold;" id="navbarDropdownMenuLink" 
           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           {{session["username"]}}
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
           <a class="dropdown-item" href="income">Gelirler</a>
           <a class="dropdown-item" href="expense">Giderler</a>
-          <a class="dropdown-item" href="#">Finans Analiz</a>
+          <a class="dropdown-item" href="dashboard">Finans Analiz</a>
         </div>
       </li>
       <li class="nav-item active">
-        <a class="nav-link" href="logout">Çıkış Yap <span class="sr-only">(current)</span></a>
+        <a class="nav-link text-danger" style="font-weight: bold;" href="logout">Çıkış Yap <span class="sr-only">(current)</span></a>
       </li>
     
     {% else %}
-      <li class="nav-item active">
-        <a class="nav-link" href="login">Giriş Yap <span class="sr-only">(current)</span></a>
-      </li>
+    <li class="nav-item active">
+       <a class="nav-link" href="login" style="color: lightgreen; font-weight: bold;">Giriş Yap <span class="sr-only">(current)</span>
+        </a>
+    </li>
+
       
       <li class="nav-item active">
-        <a class="nav-link" href="register">Kayıt Ol <span class="sr-only">(current)</span></a>
+        <a class="nav-link" style="font-weight: bold;" href="register">Kayıt Ol <span class="sr-only">(current)</span></a>
       </li>
 
     {% endif %}
