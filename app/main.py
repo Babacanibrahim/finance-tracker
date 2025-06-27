@@ -46,6 +46,7 @@ class ForgotPassword(FlaskForm):
     #Form
     username=StringField("Kullanıcı adınız : ",validators=[validators.DataRequired()])
     secret_quest=SelectField("Gizli sorunuzu seçiniz :",choices=[("pet","Evcil hayvanınızın adı ?"),("child","Çocuğunuzun adı ?"),("music","En sevdiğiniz müzik türü ?"),("secretkey","Kendinize ait bir gizli anahtar ?")])
+    answer=StringField("Gizli sorunun cevabı :")
 
 
 #Login Form
@@ -93,7 +94,8 @@ def dashboard():
 #Şifremi unuttum
 @app.route("/forgotpassword",methods=["GET","POST"])
 def forgot_password():
-    pass
+    form=ForgotPassword()
+    return render_template("forgotpassword.html",form=form)
 
 #Login 
 @app.route ("/login",methods=("GET","POST"))
