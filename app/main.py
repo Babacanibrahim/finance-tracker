@@ -1,5 +1,4 @@
 from flask import Flask,render_template,flash,redirect,url_for,session,logging,request
-from flask_mysqldb import MySQL
 from flask_sqlalchemy import SQLAlchemy
 from wtforms import Form,StringField,TextAreaField,PasswordField,validators,ValidationError,SelectField
 from passlib.hash import sha256_crypt
@@ -74,7 +73,7 @@ def length_check_password(form, field):
     if len(field.data) < 5:
         raise ValidationError("En az 5 karakter olmalı.")
     elif len(field.data) > 20 :
-        raise ValidationError("En fazla 5 karakter olmalı.")
+        raise ValidationError("En fazla 20 karakter olmalı.")
     
 #Şifre yenileme kullanıcı doğrulama formu
 class ForgotPassword(FlaskForm):
@@ -127,34 +126,66 @@ def income():
 def expense():
     return render_template ("expense.html")
 
-@app.route("/changepassword")
-def changepassword():
-    return render_template("changepassword.html")
-
 @app.route("/dashboard")
 @login_required
 def dashboard():
     return render_template("dashboard.html")
 
+#Şifre Yenileme
+@app.route("/change_password",methods=["POST","GET"])
+def change_password():
+    form=ChangePassword(request.form)
+
+    if form.validate_on_submit():
+        username=session.get("username_for_password_reset")
+        if not username:
+            flash("İşlem için doğrulama yapmalısınız.","danger")
+            return redirect(url_for("forgotpassword"))
+        
+        user=User.query.filter_by(username=username).first()
+
+        if user:
+            user.password=sha256_crypt.hash(form.password.data)
+            db.session.commit()
+            flash("Şifreniz başarıyla değiştirildi","success")
+            return redirect(url_for("login"))
+        else :
+            flash("Kullanıcı bulunamadı.","danger")
+            return redirect(url_for("forgotpassword"))
+    else:
+        flash("Bir hata oluştu. Daha sonra tekrar deneyiniz.","danger")
+        return redirect(url_for("forgotpassword"))
+
 #Şifremi unuttum
 @app.route("/forgotpassword",methods=["GET","POST"])
 def forgot_password():
     form=ForgotPassword(request.form)
+    show_modal = False
+    change_form = ChangePassword()
     if request.method=="POST" and form.validate():
+        
         username=form.username.data
         question=form.secret_quest.data
         answer=form.answer.data
+
         user=User.query.filter_by(username=username , answer=answer , question=question).first()
+        answer_error=User.query.filter(User.username==username , User.answer!=answer , User.question==question).first()
+        question_error=User.query.filter(User.username==username , User.answer==answer , User.question!=question).first()
 
         if user :
-            form_chng=ChangePassword()
-            return redirect(url_for("changepassword"),form_chng=form_chng)
+            session["username_for_password_reset"] = username
+            show_modal = True
+        
+        elif answer_error:
+            flash("Gizli sorunun yanıtı hatalı.","danger")
 
+        elif question_error:
+            flash("Gizli soru hatalı.","danger")
 
         else:
-            flash("Böyle bir kullanıcı maalesef bulunamadı.")
+            flash("Böyle bir kullanıcı maalesef bulunamadı.","danger")
 
-    return render_template("forgotpassword.html",form=form)
+    return render_template("forgotpassword.html",form=form, change_form=change_form, show_modal=show_modal)
 
 #Login 
 @app.route ("/login",methods=("GET","POST"))
