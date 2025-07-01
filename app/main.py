@@ -1,6 +1,6 @@
 from flask import Flask,render_template,flash,redirect,url_for,session,logging,request
 from flask_sqlalchemy import SQLAlchemy
-from wtforms import Form,StringField,TextAreaField,PasswordField,validators,ValidationError,SelectField
+from wtforms import Form,StringField,TextAreaField,PasswordField,validators,ValidationError,SelectField,DateField,DecimalField
 from passlib.hash import sha256_crypt
 from functools import wraps
 from flask_wtf import FlaskForm
@@ -8,18 +8,6 @@ from flask_wtf import FlaskForm
 app = Flask(__name__)
 
 app.secret_key="babacanfinans"
-
-
-#Mysql konfigürasyonları
-"""
-app.config["MYSQL_HOST"]= "localhost"
-app.config["MYSQL_USER"]= "root"
-app.config["MYSQL_PASSWORD"]= ""
-app.config["MYSQL_DB"]= "finance_tracker"
-app.config["MYSQL_CURSORCLASS"]= "DictCursor"
-
-mysql = MySQL(app)"""
-
 
 # Yeni SQLite ayarı
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///finance_tracker.db"
@@ -35,20 +23,32 @@ class User(db.Model):
     email = db.Column(db.String(100))
     question = db.Column(db.String(100))
     answer = db.Column(db.String(100))
+    incomes = db.relationship('Income', backref='user', lazy=True)
+    expenses = db.relationship('Expense', backref='user', lazy=True)
+
+
+# Category Tablosu DB için
+class Category(db.Model):
+    id=db.Column(db.Integer,primary_key=True)
+    name=db.Column(db.String,nullable=False,unique=True)
+    expenses = db.relationship('Expense', backref='category', lazy=True)
+    incomes = db.relationship('Income', backref='category', lazy=True)
 
 # Expense Tablosu DB için
 class Expense(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    category=db.Column(db.String(50))
     amount=db.Column(db.Numeric(10,2),nullable=False)
     date=db.Column(db.DateTime , nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id',nullable=False))
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
 
 # Income Tablosu DB için
 class Income(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    category=db.Column(db.String(50))
     amount=db.Column(db.Numeric(10,2),nullable=False)
     date=db.Column(db.DateTime , nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id',nullable=False))
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
 
 
 #Login Decorator
@@ -107,6 +107,15 @@ class RegisterForm(FlaskForm):
     password=PasswordField("* Parola :",validators=[validators.DataRequired(message="Parola kısmı boş olamaz."),length_check_password,validators.EqualTo("confirm",message="Lütfen parolalarınızı kontrol edin")])
     confirm=PasswordField("* Parolanız tekrar :",validators=[validators.DataRequired()])
 
+#Expense Form
+class ExpenseForm(FlaskForm):
+
+    #Form
+    date=DateField("* Harcama Tarihi",format="%Y-%m-%d",validators=[validators.DataRequired(message="Tarih zorunlu alandır")])
+    amount=DecimalField("* Harcama Miktarı (TL olarak)", validators=[validators.DataRequired(message="Harcama miktarı zorunu alandır.")])
+    category=SelectField("Harcama Kategorisi", choices=[],coerce=int)
+
+
 # Yönlendirmeler
 @app.route("/")
 def index():
@@ -121,10 +130,38 @@ def about():
 def income():
     return render_template ("income.html")
 
-@app.route("/expense")
+# Tek seferlik kategori ekleme
+@app.route("/addcategory")
+def addcategory():
+    categories=["Yeme - İçme","Ulaşım","Eğlence","Sağlık","İş","Eğitim","Diğer"]
+    
+    for c in categories:
+        if not Category.query.filter_by(name=c).first():
+            db.session.add(Category(name=c))
+    db.session.commit()
+    return "Ekleme başarılı"
+
+# Harcama ekleme
+@app.route("/expense",methods=["GET","POST"])
 @login_required
 def expense():
-    return render_template ("expense.html")
+    form=ExpenseForm(request.form)
+
+    categories=Category.query.all()
+    form.category.choices = [(c.id, c.name) for c in categories]
+
+    if request.method=="POST" and form.validate():
+        new_expense=Expense(
+            category_id=form.category.data,
+            amount=form.amount.data,
+            date=form.date.data,
+            user_id=session["user_id"])
+        db.session.add(new_expense)
+        db.session.commit()
+        flash("Harcamanız başarıyla kaydedildi.","success")
+        return redirect(url_for("expense"))
+    
+    return render_template ("expense.html",form=form)
 
 @app.route("/dashboard")
 @login_required
@@ -199,6 +236,7 @@ def login ():
         if user and sha256_crypt.verify(password, user.password):
             flash("Giriş başarılı","success")
             session["logged_in"]=True
+            session["user_id"]=user.id
             session["username"]=username
             return redirect(url_for("index"))
         
