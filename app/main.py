@@ -39,7 +39,7 @@ class Expense(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     amount=db.Column(db.Numeric(10,2),nullable=False)
     date=db.Column(db.DateTime , nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id',nullable=False))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
 
 # Income Tablosu DB için
@@ -47,7 +47,7 @@ class Income(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     amount=db.Column(db.Numeric(10,2),nullable=False)
     date=db.Column(db.DateTime , nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id',nullable=False))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
 
 
