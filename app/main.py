@@ -113,7 +113,15 @@ class ExpenseForm(FlaskForm):
     #Form
     date=DateField("* Harcama Tarihi",format="%Y-%m-%d",validators=[validators.DataRequired(message="Tarih zorunlu alandır")])
     amount=DecimalField("* Harcama Miktarı (TL olarak)", validators=[validators.DataRequired(message="Harcama miktarı zorunu alandır.")])
-    category=SelectField("Harcama Kategorisi", choices=[],coerce=int)
+    category=SelectField("Harcama Kategorisi", choices=["Yeme - İçme","Ulaşım","Eğlence","Sağlık","Yatırım","İş","Eğitim","Kira","Borç","Diğer"],coerce=int)
+
+#Income Form
+class IncomeForm(FlaskForm):
+
+    #Form
+    date=DateField("* Gelir Tarihi",format="%Y-%m-%d",validators=[validators.DataRequired(message="Tarih zorunlu alandır")])
+    amount=DecimalField("* Gelir Miktarı (TL olarak)", validators=[validators.DataRequired(message="Gelir miktarı zorunu alandır.")])
+    category=SelectField("Gelir Kategorisi", choices=["Kira","Yatırım","Ödenek","Kredi","Borç geri ödeme","Kira","Maaş","Diğer"],coerce=int)
 
 
 # Yönlendirmeler
@@ -125,21 +133,31 @@ def index():
 def about():
     return render_template("about.html")
 
-@app.route("/income")
+@app.route("/profile")
+def profile():
+    return render_template("profile.html")
+
+@app.route("/income",methods=["GET","POST"])
 @login_required
 def income():
-    return render_template ("income.html")
-
-# Tek seferlik kategori ekleme
-@app.route("/addcategory")
-def addcategory():
-    categories=["Yeme - İçme","Ulaşım","Eğlence","Sağlık","İş","Eğitim","Diğer"]
+    form=IncomeForm(request.form)
     
-    for c in categories:
-        if not Category.query.filter_by(name=c).first():
-            db.session.add(Category(name=c))
-    db.session.commit()
-    return "Ekleme başarılı"
+    categories=Category.query.all()
+    form.category.choices=[(c.id, c.name) for c in categories]
+
+    if request.method=="POST" and form.validate():
+        new_income=Income(
+            category_id = form.category.data,
+            amount = form.amount.data,
+            date = form.date.data,
+            user_id=session["user_id"])
+        db.session.add(new_income)
+        db.session.commit()
+        flash("Gelir başarıyla eklendi","success")
+        return redirect(url_for("income"))
+
+    return render_template ("income.html",form=form)
+
 
 # Harcama ekleme
 @app.route("/expense",methods=["GET","POST"])
