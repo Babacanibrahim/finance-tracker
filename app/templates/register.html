@@ -8,55 +8,83 @@
 <form method="POST">
   {{ form.hidden_tag() }}
 
-  <div class="form-group">
+<!-- İsim soyisim -->
+  <div class="row">
+  <div class="col-md-6">
+    {{ form.name.label(class="form-label") }}
+    {{ form.name(class="form-control", id="name", placeholder="İsim") }}
+    {% for error in form.name.errors %}
+      <small class="text-danger">{{ error }}</small>
+    {% endfor %}
+  </div>
+  <div class="col-md-6">
+    {{ form.surname.label(class="form-label") }}
+    {{ form.surname(class="form-control", id="surname", placeholder="Soyisim") }}
+    {% for error in form.surname.errors %}
+      <small class="text-danger">{{ error }}</small>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- E posta - kullancı adı -->
+  <div class="row">
+  <div class="col-md-6">
     {{ form.username.label(class="form-label") }}
-    {{ form.username(class="form-control", id="username", placeholder="Kullanıcı adınızı girin") }}
+    {{ form.username(class="form-control", id="username", placeholder="Kullanıcı adı") }}
     {% for error in form.username.errors %}
       <small class="text-danger">{{ error }}</small>
     {% endfor %}
   </div>
-
-  <div class="form-group mt-2">
+  <div class="col-md-6">
     {{ form.email.label(class="form-label") }}
-    {{ form.email(class="form-control", id="email", placeholder="E-posta adresinizi girin") }}
+    {{ form.email(class="form-control", id="email", placeholder="E posta") }}
     {% for error in form.email.errors %}
       <small class="text-danger">{{ error }}</small>
     {% endfor %}
   </div>
+</div>
 
-  <div class="form-group mt-2">
+<!-- Şifreler -->
+
+
+  <div class="row">
+
+  <div class="col-md-6">
+
     {{ form.password.label(class="form-label") }}
-    {{ form.password(class="form-control", id="password", placeholder="Parolanızı girin") }}
+    {{ form.password(class="form-control", id="password", placeholder="Şifre") }}
     {% for error in form.password.errors %}
       <small class="text-danger">{{ error }}</small>
     {% endfor %}
   </div>
-
-  <div class="form-group mt-2">
+  <div class="col-md-6">
     {{ form.confirm.label(class="form-label") }}
-    {{ form.confirm(class="form-control", id="confirm", placeholder="Parolanızı tekrar girin") }}
+    {{ form.confirm(class="form-control", id="confirm", placeholder="Şifre tekrar") }}
     {% for error in form.confirm.errors %}
       <small class="text-danger">{{ error }}</small>
     {% endfor %}
   </div>
+</div>
 
-  <div class="form-group">
+
+    <div class="row">
+
+  <div class="col-md-6">
+
     {{ form.secret_quest.label(class="form-label") }}
-    {{ form.secret_quest(class="form-control", id="secret_quest") }}
+    {{ form.secret_quest(class="form-control", id="quest")}}
     {% for error in form.secret_quest.errors %}
       <small class="text-danger">{{ error }}</small>
     {% endfor %}
   </div>
-
-  <div class="form-group">
-
-  {{ form.answer.label(class="form-label") }}
-  {{ form.answer(class="form-control", id="answer") }}
+  <div class="col-md-6">
+    {{ form.answer.label(class="form-label") }}
+    {{ form.answer(class="form-control", id="answer", placeholder="Yanıt") }}
     {% for error in form.answer.errors %}
       <small class="text-danger">{{ error }}</small>
     {% endfor %}
-
   </div>
+</div>
 
   <button type="submit" class="btn btn-success mt-3">Kayıt Ol</button>
   <br><br>

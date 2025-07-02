@@ -18,6 +18,8 @@ db = SQLAlchemy(app)
 # User Tablosu DB için
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50))
+    surname = db.Column(db.String(50))
     username = db.Column(db.String(20), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     email = db.Column(db.String(100))
@@ -27,12 +29,19 @@ class User(db.Model):
     expenses = db.relationship('Expense', backref='user', lazy=True)
 
 
-# Category Tablosu DB için
-class Category(db.Model):
+#Income Category Tablosu DB için
+class Income_Category(db.Model):
+    __tablename__ = "income_category"
     id=db.Column(db.Integer,primary_key=True)
     name=db.Column(db.String,nullable=False,unique=True)
-    expenses = db.relationship('Expense', backref='category', lazy=True)
-    incomes = db.relationship('Income', backref='category', lazy=True)
+    incomes = db.relationship('Income', backref='income_category', lazy=True)
+
+#Expense Category Tablosu DB için
+class Expense_Category(db.Model):
+    __tablename__ = "expense_category"
+    id=db.Column(db.Integer,primary_key=True)
+    name=db.Column(db.String,nullable=False,unique=True)
+    expenses = db.relationship('Expense', backref='expense_category', lazy=True)
 
 # Expense Tablosu DB için
 class Expense(db.Model):
@@ -40,7 +49,7 @@ class Expense(db.Model):
     amount=db.Column(db.Numeric(10,2),nullable=False)
     date=db.Column(db.DateTime , nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
-    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('expense_category.id'), nullable=False)
 
 # Income Tablosu DB için
 class Income(db.Model):
@@ -48,7 +57,7 @@ class Income(db.Model):
     amount=db.Column(db.Numeric(10,2),nullable=False)
     date=db.Column(db.DateTime , nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
-    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('income_category.id'), nullable=False)
 
 
 #Login Decorator
@@ -100,6 +109,8 @@ class LoginForm(FlaskForm):
 class RegisterForm(FlaskForm):
   
     #Form
+    name=StringField("İsim :")
+    surname=StringField("Soyisim :")
     username=StringField("* Kullanıcı adınız :",validators=[length_check_username,validators.DataRequired(message="Kullanıcı adı boş olamaz.")])
     email=StringField(" E posta :",validators=[validators.optional(),validators.Email(message="Geçerli bir mail adresi giriniz.")])
     secret_quest=SelectField("Gizli sorunuzu seçiniz (şifrenizi unutmanız durumunda kullanılır opsiyoneldir)",choices=[("","Soru seçiniz."),("pet","Evcil hayvanınızın adı ?"),("child","Çocuğunuzun adı ?"),("music","En sevdiğiniz müzik türü ?"),("secretkey","Kendinize ait bir gizli anahtar ? (önerilmez)")],validate_choice=False)
@@ -113,15 +124,14 @@ class ExpenseForm(FlaskForm):
     #Form
     date=DateField("* Harcama Tarihi",format="%Y-%m-%d",validators=[validators.DataRequired(message="Tarih zorunlu alandır")])
     amount=DecimalField("* Harcama Miktarı (TL olarak)", validators=[validators.DataRequired(message="Harcama miktarı zorunu alandır.")])
-    category=SelectField("Harcama Kategorisi", choices=["Yeme - İçme","Ulaşım","Eğlence","Sağlık","Yatırım","İş","Eğitim","Kira","Borç","Diğer"],coerce=int)
-
+    category=SelectField("Harcama Kategorisi", coerce=int)
 #Income Form
 class IncomeForm(FlaskForm):
 
     #Form
     date=DateField("* Gelir Tarihi",format="%Y-%m-%d",validators=[validators.DataRequired(message="Tarih zorunlu alandır")])
     amount=DecimalField("* Gelir Miktarı (TL olarak)", validators=[validators.DataRequired(message="Gelir miktarı zorunu alandır.")])
-    category=SelectField("Gelir Kategorisi", choices=["Kira","Yatırım","Ödenek","Kredi","Borç geri ödeme","Kira","Maaş","Diğer"],coerce=int)
+    category=SelectField("Gelir Kategorisi", coerce=int)
 
 
 # Yönlendirmeler
@@ -134,16 +144,18 @@ def about():
     return render_template("about.html")
 
 @app.route("/profile")
+@login_required
 def profile():
     return render_template("profile.html")
 
+#Gelir Ekleme
 @app.route("/income",methods=["GET","POST"])
 @login_required
 def income():
     form=IncomeForm(request.form)
-    
-    categories=Category.query.all()
-    form.category.choices=[(c.id, c.name) for c in categories]
+
+    categories=Income_Category.query.all()
+    form.category.choices = [(c.id , c.name) for c in categories]
 
     if request.method=="POST" and form.validate():
         new_income=Income(
@@ -165,9 +177,9 @@ def income():
 def expense():
     form=ExpenseForm(request.form)
 
-    categories=Category.query.all()
-    form.category.choices = [(c.id, c.name) for c in categories]
-
+    categories=Expense_Category.query.all()
+    form.category.choices = [(c.id , c.name) for c in categories]
+    
     if request.method=="POST" and form.validate():
         new_expense=Expense(
             category_id=form.category.data,
@@ -188,6 +200,7 @@ def dashboard():
 
 #Şifre Yenileme
 @app.route("/change_password",methods=["POST","GET"])
+@login_required
 def change_password():
     form=ChangePassword(request.form)
 
@@ -255,6 +268,11 @@ def login ():
             flash("Giriş başarılı","success")
             session["logged_in"]=True
             session["user_id"]=user.id
+            session["user_name"]=user.name
+            session["user_mail"] = user.email
+            session["user_question"]=user.question
+            session["user_answer"]=user.answer
+            session["user_surname"]=user.surname
             session["username"]=username
             return redirect(url_for("index"))
         
@@ -272,6 +290,8 @@ def register():
      form = RegisterForm(request.form)
      if request.method == "POST" and form.validate():
         username = form.username.data
+        name=form.name.data
+        surname=form.surname.data
         password = sha256_crypt.hash(form.password.data)
         email = form.email.data
         question = form.secret_quest.data
@@ -282,7 +302,7 @@ def register():
         if existing_user:
             flash("Bu kullanıcı adı daha önceden alınmış.", "danger")
         else:
-            new_user = User(username=username, password=password, email=email, question=question, answer=answer)
+            new_user = User(username=username, name=name, surname=surname, password=password, email=email, question=question, answer=answer)
             db.session.add(new_user)
             db.session.commit()
             flash("Kayıt başarılı! Giriş yapabilirsiniz.", "success")
@@ -299,4 +319,19 @@ def logout():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+
+        expense_categories = ["Kredi Ödemesi", "Borç", "Yeme - içme", "Ulaşım", "Yatırım", "Eğlence", "Sağlık", "Kira", "Eğitim"]
+
+        income_categories = ["Maaş", "Kredi", "Ödenek", "Borç geri ödeme", "Yatırım", "İş","Diğer"]
+
+        if not Income_Category.query.first():
+            for name in income_categories:
+                db.session.add(Income_Category(name=name))
+            db.session.commit()
+
+        if not Expense_Category.query.first():
+            for name in expense_categories:
+                db.session.add(Expense_Category(name=name))
+            db.session.commit()
+
     app.run(debug=True)
