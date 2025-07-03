@@ -4,6 +4,7 @@ from wtforms import Form,StringField,TextAreaField,PasswordField,validators,Vali
 from passlib.hash import sha256_crypt
 from functools import wraps
 from flask_wtf import FlaskForm
+from sqlalchemy import and_
 
 app = Flask(__name__)
 
@@ -43,14 +44,6 @@ class Expense_Category(db.Model):
     name=db.Column(db.String,nullable=False,unique=True)
     expenses = db.relationship('Expense', backref='expense_category', lazy=True)
 
-# Expense Tablosu DB için
-class Expense(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    amount=db.Column(db.Numeric(10,2),nullable=False)
-    date=db.Column(db.DateTime , nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
-    category_id = db.Column(db.Integer, db.ForeignKey('expense_category.id'), nullable=False)
-
 # Income Tablosu DB için
 class Income(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -58,6 +51,14 @@ class Income(db.Model):
     date=db.Column(db.DateTime , nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('income_category.id'), nullable=False)
+
+# Expense Tablosu DB için
+class Expense(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    amount=db.Column(db.Numeric(10,2),nullable=False)
+    date=db.Column(db.DateTime , nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('expense_category.id'), nullable=False)
 
 
 #Login Decorator
@@ -113,10 +114,21 @@ class RegisterForm(FlaskForm):
     surname=StringField("Soyisim :")
     username=StringField("* Kullanıcı adınız :",validators=[length_check_username,validators.DataRequired(message="Kullanıcı adı boş olamaz.")])
     email=StringField(" E posta :",validators=[validators.optional(),validators.Email(message="Geçerli bir mail adresi giriniz.")])
-    secret_quest=SelectField("Gizli sorunuzu seçiniz (şifrenizi unutmanız durumunda kullanılır opsiyoneldir)",choices=[("","Soru seçiniz."),("pet","Evcil hayvanınızın adı ?"),("child","Çocuğunuzun adı ?"),("music","En sevdiğiniz müzik türü ?"),("secretkey","Kendinize ait bir gizli anahtar ? (önerilmez)")],validate_choice=False)
+    secret_quest=SelectField("Gizli sorunuzu seçiniz (şifrenizi unutmanız durumunda kullanılır opsiyoneldir)",choices=[("","Soru seçiniz."),("pet","Evcil hayvanınızın adı ?"),("child","Çocuğunuzun adı ?"),("music","En sevdiğiniz müzik tarzı ?"),("secretkey","Kendinize ait bir gizli anahtar ? (önerilmez)")],validate_choice=False)
     answer=StringField("Gizli sorunun cevabı :")
     password=PasswordField("* Parola :",validators=[validators.DataRequired(message="Parola kısmı boş olamaz."),length_check_password,validators.EqualTo("confirm",message="Lütfen parolalarınızı kontrol edin")])
     confirm=PasswordField("* Parolanız tekrar :",validators=[validators.DataRequired()])
+
+#Profile Edit Form
+class ProfileEditForm(FlaskForm):
+
+    #Form
+    name=StringField("İsim :")
+    surname=StringField("Soyisim :")
+    username=StringField("Kullanıcı adı :",validators=[length_check_username,validators.DataRequired(message="Kullanıcı adı boş olamaz.")])
+    email=StringField("E posta :",validators=[validators.optional(),validators.Email(message="Geçerli bir mail adresi giriniz.")])
+    secret_quest=SelectField("Gizli sorunuzu seçiniz (şifrenizi unutmanız durumunda kullanılır opsiyoneldir)",choices=[],validate_choice=False)
+    answer=StringField("Gizli sorunun cevabı :")
 
 #Expense Form
 class ExpenseForm(FlaskForm):
@@ -143,10 +155,60 @@ def index():
 def about():
     return render_template("about.html")
 
-@app.route("/profile")
+#Otomatik User Gönderme
+@app.context_processor
+def inject_user():
+    if "user_id" in session:
+        user = User.query.filter_by(id=session["user_id"]).first()
+        return dict(user = user)
+    return dict(user=None)
+
+#Profil Düzenleme
+@app.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
-    return render_template("profile.html")
+    user = User.query.get(session["user_id"])
+
+    form = ProfileEditForm()
+
+    # Choices ataması
+    form.secret_quest.choices = [
+        ("", "Soru seçiniz."),
+        ("pet", "Evcil hayvanınızın adı ?"),
+        ("child", "Çocuğunuzun adı ?"),
+        ("music", "En sevdiğiniz müzik tarzı ?"),
+        ("secretkey", "Kendinize ait bir gizli anahtar ? (önerilmez)")
+    ]
+
+    if request.method == "GET":
+        form.name.data = user.name
+        form.surname.data = user.surname
+        form.username.data = user.username
+        form.email.data = user.email
+        form.secret_quest.data = user.question  # burası önemli!
+        form.answer.data = user.answer
+
+    if form.validate_on_submit():
+        if form.username.data != user.username:
+            existing_user = User.query.filter_by(username=form.username.data).first()
+            if existing_user:
+                flash("Bu kullanıcı adı daha önce alınmış. Başka bir kullanıcı adı deneyin.", "danger")
+                return render_template("profile.html", form=form)
+
+        user.name = form.name.data
+        user.surname = form.surname.data
+        user.username = form.username.data
+        user.email = form.email.data
+        user.question = form.secret_quest.data
+        user.answer = form.answer.data
+
+        db.session.commit()
+        flash("Profil bilgileriniz başarıyla güncellendi.", "success")
+        return redirect(url_for("profile"))
+
+    return render_template("profile.html", form=form)
+
+
 
 #Gelir Ekleme
 @app.route("/income",methods=["GET","POST"])
@@ -200,7 +262,6 @@ def dashboard():
 
 #Şifre Yenileme
 @app.route("/change_password",methods=["POST","GET"])
-@login_required
 def change_password():
     form=ChangePassword(request.form)
 
@@ -216,6 +277,7 @@ def change_password():
             user.password=sha256_crypt.hash(form.password.data)
             db.session.commit()
             flash("Şifreniz başarıyla değiştirildi","success")
+            session.pop("username_for_password_reset",None)
             return redirect(url_for("login"))
         else :
             flash("Kullanıcı bulunamadı.","danger")
@@ -236,10 +298,10 @@ def forgot_password():
         question=form.secret_quest.data
         answer=form.answer.data
 
-        user=User.query.filter_by(username=username , answer=answer , question=question).first()
-        answer_error=User.query.filter(User.username==username , User.answer!=answer , User.question==question).first()
-        question_error=User.query.filter(User.username==username , User.answer==answer , User.question!=question).first()
-
+        user = User.query.filter(and_(User.username == username,User.answer == answer,User.question == question)).first()
+        answer_error = User.query.filter(and_(User.username == username,User.answer != answer,User.question == question)).first()
+        question_error = User.query.filter(and_(User.username == username,User.answer == answer,User.question != question)).first()
+        
         if user :
             session["username_for_password_reset"] = username
             show_modal = True
@@ -259,6 +321,7 @@ def forgot_password():
 @app.route ("/login",methods=("GET","POST"))
 def login ():
     form=LoginForm(request.form)
+    user=None
     if request.method=="POST" and form.validate():
         username=form.username.data
         password=form.password.data
@@ -268,21 +331,15 @@ def login ():
             flash("Giriş başarılı","success")
             session["logged_in"]=True
             session["user_id"]=user.id
-            session["user_name"]=user.name
-            session["user_mail"] = user.email
-            session["user_question"]=user.question
-            session["user_answer"]=user.answer
-            session["user_surname"]=user.surname
-            session["username"]=username
             return redirect(url_for("index"))
         
         elif user and not sha256_crypt.verify(password, user.password):
                 flash("Şifreniz yanlış","danger")
-                return render_template("login.html",form=form)
+                return render_template("login.html",form=form, user=user)
         else:
             flash("Böyle bir kullanıcı adı bulunamadı.","danger")
 
-    return render_template("login.html",form=form)
+    return render_template("login.html",form=form, user = user)
 
 #Register
 @app.route("/register",methods=["GET","POST"])
