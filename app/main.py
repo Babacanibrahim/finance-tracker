@@ -99,6 +99,11 @@ class ChangePassword(FlaskForm):
     password=PasswordField("* Parola :",validators=[validators.DataRequired(message="Lütfen bir parola giriniz."),length_check_password,validators.EqualTo("confirm",message="Lütfen parolalarınızı kontrol edin")])
     confirm=PasswordField("* Parolanız tekrar :",validators=[validators.DataRequired(message="Lütfen parolanızı kontrol ediniz.")])
 
+#Şifre Değiştirme
+class RePassword(FlaskForm):
+
+    current_password=PasswordField("Mevcut Parola :", validators=[validators.DataRequired("Güncel parolanız gerekli.")])
+
 #Login Form
 class LoginForm(FlaskForm):
     
@@ -164,15 +169,30 @@ def inject_user():
         return dict(user = user)
     return dict(user=None)
 
-#Profil Düzenleme
+# Mevcut Şifreyi Doğrulama
+@app.route("/repassword", methods=["GET", "POST"])
+@login_required
+def repassword():
+    form = RePassword()
+    change_form = ChangePassword()
+    user = User.query.get(session["user_id"])
+    show_modal = False
+
+    if form.validate_on_submit():
+        if sha256_crypt.verify(form.current_password.data, user.password):
+            show_modal = True
+        else:
+            flash("Mevcut şifreniz yanlış.", "danger")
+
+    return render_template("repassword.html", form=form, change_form=change_form, show_modal=show_modal)
+
+# Profil Düzenleme
 @app.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
     user = User.query.get(session["user_id"])
-
     form = ProfileEditForm()
 
-    # Choices ataması
     form.secret_quest.choices = [
         ("", "Soru seçiniz."),
         ("pet", "Evcil hayvanınızın adı ?"),
@@ -186,30 +206,33 @@ def profile():
         form.surname.data = user.surname
         form.username.data = user.username
         form.email.data = user.email
-        form.secret_quest.data = user.question  # burası önemli!
+        form.secret_quest.data = user.question
         form.answer.data = user.answer
 
     if form.validate_on_submit():
-        if form.username.data != user.username:
-            existing_user = User.query.filter_by(username=form.username.data).first()
-            if existing_user:
-                flash("Bu kullanıcı adı daha önce alınmış. Başka bir kullanıcı adı deneyin.", "danger")
-                return render_template("profile.html", form=form)
+        action = request.form.get("action")
+        if action == "save":
+            if form.username.data != user.username:
+                existing_user = User.query.filter_by(username=form.username.data).first()
+                if existing_user:
+                    flash("Bu kullanıcı adı daha önce alınmış. Başka bir kullanıcı adı deneyin.", "danger")
+                    return render_template("profile.html", form=form)
 
-        user.name = form.name.data
-        user.surname = form.surname.data
-        user.username = form.username.data
-        user.email = form.email.data
-        user.question = form.secret_quest.data
-        user.answer = form.answer.data
+            user.name = form.name.data
+            user.surname = form.surname.data
+            user.username = form.username.data
+            user.email = form.email.data
+            user.question = form.secret_quest.data
+            user.answer = form.answer.data
 
-        db.session.commit()
-        flash("Profil bilgileriniz başarıyla güncellendi.", "success")
-        return redirect(url_for("profile"))
+            db.session.commit()
+            flash("Profil bilgileriniz başarıyla güncellendi.", "success")
+            return redirect(url_for("profile"))
+
+        elif action == "password":
+            return redirect(url_for("repassword"))
 
     return render_template("profile.html", form=form)
-
-
 
 #Gelir Ekleme
 @app.route("/income",methods=["GET","POST"])
@@ -261,62 +284,62 @@ def expense():
 def dashboard():
     return render_template("dashboard.html")
 
-#Şifre Yenileme
-@app.route("/change_password",methods=["POST","GET"])
+# Yeni Şifre Belirleme
+@app.route("/change_password", methods=["GET", "POST"])
+@login_required
 def change_password():
-    form=ChangePassword(request.form)
+    form = ChangePassword()
+    repass_form = RePassword()  # Sadece boş da olsa gönderilmesi gerekir.
+    user = User.query.get(session["user_id"])
+    show_modal = False
 
     if form.validate_on_submit():
-        username=session.get("username_for_password_reset")
-        if not username:
-            flash("İşlem için doğrulama yapmalısınız.","danger")
-            return redirect(url_for("forgotpassword"))
-        
-        user=User.query.filter_by(username=username).first()
-
-        if user:
-            user.password=sha256_crypt.hash(form.password.data)
+        if form.password.data == form.confirm.data:
+            user.password = sha256_crypt.hash(form.password.data)
             db.session.commit()
-            flash("Şifreniz başarıyla değiştirildi","success")
-            session.pop("username_for_password_reset",None)
-            return redirect(url_for("login"))
-        else :
-            flash("Kullanıcı bulunamadı.","danger")
-            return redirect(url_for("forgotpassword"))
-    else:
-        flash("Bir hata oluştu. Daha sonra tekrar deneyiniz.","danger")
-        return redirect(url_for("forgotpassword"))
+            flash("Şifreniz başarıyla değiştirildi.", "success")
+            return redirect(url_for("profile"))
+        else:
+            flash("Şifreler eşleşmiyor.", "danger")
+            show_modal = True
 
-#Şifremi unuttum
-@app.route("/forgotpassword",methods=["GET","POST"])
+    # Modal tekrar gösterilsin ki kullanıcı yeniden deneyebilsin
+    return render_template("repassword.html", form=repass_form, change_form=form, show_modal=True)
+
+# Şifremi Unuttum - Gizli Soruyu Doğrulama ve Şifre Sıfırlama Modalı
+@app.route("/forgotpassword", methods=["GET", "POST"])
 def forgot_password():
-    form=ForgotPassword(request.form)
-    show_modal = False
+    form = ForgotPassword()
     change_form = ChangePassword()
-    if request.method=="POST" and form.validate():
-        
-        username=form.username.data
-        question=form.secret_quest.data
-        answer=form.answer.data
+    show_modal = False
 
-        user = User.query.filter(and_(User.username == username,User.answer == answer,User.question == question)).first()
-        answer_error = User.query.filter(and_(User.username == username,User.answer != answer,User.question == question)).first()
-        question_error = User.query.filter(and_(User.username == username,User.answer == answer,User.question != question)).first()
-        
-        if user :
+    if form.validate_on_submit():
+        username = form.username.data
+        question = form.secret_quest.data
+        answer = form.answer.data
+
+        user = User.query.filter_by(username=username, question=question, answer=answer).first()
+        if user:
             session["username_for_password_reset"] = username
             show_modal = True
-        
-        elif answer_error:
-            flash("Gizli sorunun yanıtı hatalı.","danger")
-
-        elif question_error:
-            flash("Gizli soru hatalı.","danger")
-
         else:
-            flash("Böyle bir kullanıcı maalesef bulunamadı.","danger")
+            # Detaylı kontrol yerine genel hata mesajı, istersen ayrı ayrı kontrol eklenebilir.
+            flash("Kullanıcı adı, gizli soru veya yanıt hatalı.", "danger")
 
-    return render_template("forgotpassword.html",form=form, change_form=change_form, show_modal=show_modal)
+    # Modal form submit işlemi
+    if show_modal and change_form.validate_on_submit():
+        username = session.get("username_for_password_reset")
+        user = User.query.filter_by(username=username).first()
+        if user and change_form.password.data == change_form.confirm.data:
+            user.password = sha256_crypt.hash(change_form.password.data)
+            db.session.commit()
+            session.pop("username_for_password_reset", None)
+            flash("Şifreniz başarıyla sıfırlandı.", "success")
+            return redirect(url_for("login"))
+        else:
+            flash("Şifreler uyuşmuyor veya hata oluştu.", "danger")
+
+    return render_template("forgotpassword.html", form=form, change_form=change_form, show_modal=show_modal)
 
 #Login 
 @app.route ("/login",methods=("GET","POST"))
@@ -369,6 +392,7 @@ def register():
         return render_template("register.html", form=form)
 #Logout
 @app.route("/logout")
+@login_required
 def logout():
     session.clear()
     return redirect(url_for("login"))

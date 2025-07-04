@@ -8,102 +8,87 @@ Profil - {{ form.name.data }} {{ form.surname.data }}
 <div class="container mt-4">
   <h2 class="mb-4">Profil Bilgilerini Güncelle</h2>
 
-<form method="POST" action="{{ url_for('profile') }}">
-  {{ form.csrf_token }}
+  <form method="POST" action="{{ url_for('profile') }}">
+    {{ form.csrf_token }}
 
-  <ul class="nav nav-tabs">
-    <li class="nav-item">
-      <a class="nav-link active" data-toggle="tab" href="#profil">Profil Bilgileri</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" data-toggle="tab" href="#contact">İletişim Bilgileri</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" data-toggle="tab" href="#security">Gizlilik ve Güvenlik</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" data-toggle="tab" href="#password">Şifre</a>
-    </li>
-  </ul>
+    <ul class="nav nav-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" data-toggle="tab" href="#profil">Profil Bilgileri</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" href="#contact">İletişim Bilgileri</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" href="#security">Gizlilik ve Güvenlik</a>
+      </li>
+    </ul>
 
-  <!-- Tab içerikleri -->
-  <div class="tab-content mt-3">
+    <!-- Tab içerikleri -->
+    <div class="tab-content mt-3">
 
-    <!-- Profil -->
-    <div class="tab-pane fade show active" id="profil">
-      <div class="form-group">
-        {{ form.name.label(class="form-label") }}
-        {{ form.name(class="form-control") }}
-        {% for error in form.name.errors %}
-          <div class="text-danger">{{ error }}</div>
-        {% endfor %}
+      <!-- Profil -->
+      <div class="tab-pane fade show active" id="profil">
+        <div class="form-group">
+          {{ form.name.label(class="form-label") }}
+          {{ form.name(class="form-control") }}
+          {% for error in form.name.errors %}
+            <div class="text-danger">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group">
+          {{ form.surname.label(class="form-label") }}
+          {{ form.surname(class="form-control") }}
+          {% for error in form.surname.errors %}
+            <div class="text-danger">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group">
+          {{ form.username.label(class="form-label") }}
+          {{ form.username(class="form-control") }}
+          {% for error in form.username.errors %}
+            <div class="text-danger">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <button type="submit" name="action" value="save" class="btn btn-success">Kaydet</button>
       </div>
 
-      <div class="form-group">
-        {{ form.surname.label(class="form-label") }}
-        {{ form.surname(class="form-control") }}
-        {% for error in form.surname.errors %}
-          <div class="text-danger">{{ error }}</div>
-        {% endfor %}
+      <!-- İletişim -->
+      <div class="tab-pane fade" id="contact">
+        <div class="form-group">
+          {{ form.email.label(class="form-label") }}
+          {{ form.email(class="form-control") }}
+          {% for error in form.email.errors %}
+            <div class="text-danger">{{ error }}</div>
+          {% endfor %}
+        </div>
+        <button type="submit" name="action" value="save" class="btn btn-success">Kaydet</button>
       </div>
 
-      <div class="form-group">
-        {{ form.username.label(class="form-label") }}
-        {{ form.username(class="form-control") }}
-        {% for error in form.username.errors %}
-          <div class="text-danger">{{ error }}</div>
-        {% endfor %}
+      <!-- Gizlilik -->
+      <div class="tab-pane fade" id="security">
+        <div class="form-group">
+          {{ form.secret_quest.label(class="form-label") }}
+          {{ form.secret_quest(class="form-control") }}
+          {% for error in form.secret_quest.errors %}
+            <div class="text-danger">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group">
+          {{ form.answer.label(class="form-label") }}
+          {{ form.answer(class="form-control") }}
+          {% for error in form.answer.errors %}
+            <div class="text-danger">{{ error }}</div>
+          {% endfor %}
+        </div>
+        <button type="submit" name="action" value="save" class="btn btn-success">Kaydet</button>
       </div>
 
-      <button type="submit" class="btn btn-success">Kaydet</button>
     </div>
-
-    <!-- İletişim -->
-    <div class="tab-pane fade" id="contact">
-      <div class="form-group">
-        {{ form.email.label(class="form-label") }}
-        {{ form.email(class="form-control") }}
-        {% for error in form.email.errors %}
-          <div class="text-danger">{{ error }}</div>
-        {% endfor %}
-      </div>
-      <button type="submit" class="btn btn-success">Kaydet</button>
-    </div>
-
-    <!-- Gizlilik -->
-    <div class="tab-pane fade" id="security">
-      <div class="form-group">
-        {{ form.secret_quest.label(class="form-label") }}
-        {{ form.secret_quest(class="form-control") }}
-        {% for error in form.secret_quest.errors %}
-          <div class="text-danger">{{ error }}</div>
-        {% endfor %}
-      </div>
-
-      <div class="form-group">
-        {{ form.answer.label(class="form-label") }}
-        {{ form.answer(class="form-control") }}
-        {% for error in form.answer.errors %}
-          <div class="text-danger">{{ error }}</div>
-        {% endfor %}
-      </div>
-      <button type="submit" class="btn btn-success">Kaydet</button>
-    </div>
-
-    <!-- Şifre -->
-    <div class="tab-pane fade" id="password">
-      <div class="form-group">
-        {{ form.password.label(class="form-label") }}
-        {{ form.password(class="form-control") }}
-        {% for error in form.password.errors %}
-          <div class="text-danger">{{ error }}</div>
-        {% endfor %}
-      </div>
-      <button type="submit" class="btn btn-success">Kaydet</button>
-    </div>
-
-  </div> <!-- .tab-content -->
-</form>
-
+  </form>
 </div>
+
 {% endblock body %}
