@@ -129,6 +129,7 @@ class ProfileEditForm(FlaskForm):
     email=StringField("E posta :",validators=[validators.optional(),validators.Email(message="Geçerli bir mail adresi giriniz.")])
     secret_quest=SelectField("Gizli sorunuzu seçiniz (şifrenizi unutmanız durumunda kullanılır opsiyoneldir)",choices=[],validate_choice=False)
     answer=StringField("Gizli sorunun cevabı :")
+    password=PasswordField("Mevcut parolanızı girin :")
 
 #Expense Form
 class ExpenseForm(FlaskForm):
