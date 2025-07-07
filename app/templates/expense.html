@@ -1,5 +1,9 @@
 {% extends "layout.html" %}
 
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles/tables.css') }}">
+{% endblock head %}
+
 {% block title %}
 Gider Ekleme
 {% endblock title %}
@@ -7,36 +11,62 @@ Gider Ekleme
 {% block body %}
 <p>Hoşgeldiniz <strong>{{user.name}} {{user.surname}}</strong>,</p>
 <h2>Kişisel Gider Tablonuz</h2>
-<hr><hr>
+<hr>
+<hr>
 
-<form method="POST">
-  {{ form.hidden_tag() }}
+<div style="display: flex; gap: 20px; align-items: flex-start;">
 
-  <div class="form-group">
-    {{ form.amount.label(class="form-label") }}
-    {{ form.amount(class="form-control", id="amount") }}
-    {% for error in form.amount.errors %}
+  <form method="POST" style="flex: 1;">
+    {{ form.hidden_tag() }}
+
+    <div class="form-group">
+      {{ form.amount.label(class="form-label") }}
+      {{ form.amount(class="form-control", id="amount") }}
+      {% for error in form.amount.errors %}
       <small class="text-danger">{{ error }}</small>
-    {% endfor %}
-  </div>
+      {% endfor %}
+    </div>
 
-  <div class="form-group">
-    {{ form.category.label(class="form-label") }}
-    {{ form.category(class="form-control", id="category") }}
-    {% for error in form.category.errors %}
+    <div class="form-group">
+      {{ form.category.label(class="form-label") }}
+      {{ form.category(class="form-control", id="category") }}
+      {% for error in form.category.errors %}
       <small class="text-danger">{{ error }}</small>
-    {% endfor %}
-  </div>
+      {% endfor %}
+    </div>
 
-  <div class="form-group">
-    {{ form.date.label(class="form-label") }}
-    {{ form.date(class="form-control", id="date") }}
-    {% for error in form.date.errors %}
+    <div class="form-group">
+      {{ form.date.label(class="form-label") }}
+      {{ form.date(class="form-control", id="date") }}
+      {% for error in form.date.errors %}
       <small class="text-danger">{{ error }}</small>
-    {% endfor %}
-  </div>
+      {% endfor %}
+    </div>
 
-  <button type="submit" class="btn btn-primary mt-3">Harcama Ekle</button>
-</form>
+    <button type="submit" class="btn btn-primary mt-3">Harcama Ekle</button>
+  </form>
+  <!-- Giderler Tablosu -->
+  <form style="flex: 1;">
+
+    <table>
+      <thead>
+        <tr>
+          <th>Harcama Miktarı</th>
+          <th>Harcama Tarihi</th>
+          <th>Harcama Kategorisi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for expense in expenses %}
+        <tr>
+          <td>{{expense.amount}}</td>
+          <td>{{expense.date}}</td>
+          <td>{{expense.expense_category.name}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </form>
+</div>
 
 {% endblock body %}

@@ -1,0 +1,69 @@
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: Arial, sans-serif;
+    background-color: #c2bcbc;
+    box-shadow: 0 2px 5px rgba(8, 77, 22, 0.1);
+}
+
+thead {
+    background-color: #116c61;
+    color: white;
+}
+
+thead th {
+    padding: 12px;
+    text-align: left;
+}
+
+tbody tr:hover {
+    background-color: #16acba;
+}
+
+tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Responsive için küçük ekranlarda tabloyu kaydırılabilir yapalım */
+@media (max-width: 600px) {
+
+    table,
+    thead,
+    tbody,
+    th,
+    td,
+    tr {
+        display: block;
+    }
+
+    thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+
+    tbody tr {
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        padding: 10px;
+        border-radius: 6px;
+    }
+
+    tbody td {
+        border: none;
+        padding-left: 50%;
+        position: relative;
+        text-align: right;
+    }
+
+    tbody td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 15px;
+        top: 10px;
+        font-weight: bold;
+        text-align: left;
+        color: #333;
+    }
+}

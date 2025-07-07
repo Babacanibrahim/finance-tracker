@@ -253,6 +253,10 @@ def income():
         db.session.commit()
         flash("Gelir başarıyla eklendi","success")
         return redirect(url_for("income"))
+    
+    elif request.method == "GET":
+        incomes = Income.query.all()
+        return render_template("income.html", incomes = incomes , form = form)
 
     return render_template ("income.html",form=form)
 
@@ -276,6 +280,10 @@ def expense():
         db.session.commit()
         flash("Harcamanız başarıyla kaydedildi.","success")
         return redirect(url_for("expense"))
+    
+    elif request.method =="GET":
+        expenses = Expense.query.all()
+        return render_template ("expense.html", expenses = expenses , form = form)
     
     return render_template ("expense.html",form=form)
 
