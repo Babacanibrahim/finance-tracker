@@ -368,6 +368,31 @@ def expense():
     
     return render_template ("expense.html",form=form, order_amount = order_amount, order_category = order_category, order_date = order_date, expenses = expenses)
 
+# Harcama Düzenleme
+@app.route("/edit_expense<int:id>", methods = ["GET","POST"])
+@login_required
+def edit_expense(id):
+    expense = Expense.query.get(id)
+    form = ExpenseForm()
+    categories = Expense_Category.query.all()
+    form.category.choices= [(c.id, c.name) for c in categories]
+
+    if request.method == "GET":
+        form.amount.data = expense.amount
+        form.category.data = expense.category_id
+        form.date.data = expense.date
+        return render_template("edit_expense.html", form = form, expense = expense)
+
+    elif form.validate_on_submit():
+        expense.amount = form.amount.data
+        expense.category_id = form.category.data
+        expense.date = form.date.data
+        db.session.commit()
+        return redirect(url_for("expense"))
+    else:
+        flash("BİR HATA OLUŞTU.","danger")
+    return render_template("edit_expense.html", form = form, expense = expense)
+
 @app.route("/dashboard")
 @login_required
 def dashboard():
