@@ -5,6 +5,7 @@ from passlib.hash import sha256_crypt
 from functools import wraps
 from flask_wtf import FlaskForm
 from sqlalchemy import and_
+import numpy as np
 
 app = Flask(__name__)
 
@@ -48,7 +49,7 @@ class Expense_Category(db.Model):
 class Income(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     amount=db.Column(db.Numeric(10,2),nullable=False)
-    date=db.Column(db.DateTime , nullable=False)
+    date=db.Column(db.Date , nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('income_category.id'), nullable=False)
 
@@ -56,7 +57,7 @@ class Income(db.Model):
 class Expense(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     amount=db.Column(db.Numeric(10,2),nullable=False)
-    date=db.Column(db.DateTime , nullable=False)
+    date=db.Column(db.Date , nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('expense_category.id'), nullable=False)
 
@@ -254,11 +255,15 @@ def income():
         flash("Gelir başarıyla eklendi","success")
         return redirect(url_for("income"))
     
-    elif request.method == "GET":
-        incomes = Income.query.all()
-        return render_template("income.html", incomes = incomes , form = form)
+    order = request.args.get("order","asc")
 
-    return render_template ("income.html",form=form)
+    if order =="desc":
+        incomes = Income.query.filter_by(user_id=session["user_id"]).order_by(Income.date.desc()).all()
+
+    else:
+        incomes = Income.query.filter_by(user_id=session["user_id"]).order_by(Income.date.asc()).all()
+
+    return render_template ("income.html",form=form, incomes = incomes, order = order)
 
 
 # Harcama ekleme
@@ -281,11 +286,16 @@ def expense():
         flash("Harcamanız başarıyla kaydedildi.","success")
         return redirect(url_for("expense"))
     
-    elif request.method =="GET":
-        expenses = Expense.query.all()
-        return render_template ("expense.html", expenses = expenses , form = form)
+    order = request.args.get("order","asc")
+
+    if order =="desc":
+        expenses = Expense.query.filter_by(user_id=session["user_id"]).order_by(Expense.date.desc()).all()
+
+    else:
+        expenses = Expense.query.filter_by(user_id=session["user_id"]).order_by(Expense.date.asc()).all()
+
     
-    return render_template ("expense.html",form=form)
+    return render_template ("expense.html",form=form, expenses = expenses, order = order)
 
 @app.route("/dashboard")
 @login_required

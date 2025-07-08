@@ -52,7 +52,11 @@ Gelir Ekleme
       <thead>
         <tr>
           <th>Gelir Miktarı </th>
-          <th>Gelir Tarihi </th>
+          <th><a href="{{url_for('income',order = 'desc' if order == 'asc' else 'asc')}}">Gelir Tarihi {% if order == 'asc'%}
+              &#x25B2;
+              {% else %}
+              &#x25BC;
+              {% endif %} </a></th>
           <th>Gelir Kategorisi </th>
         </tr>
       </thead>

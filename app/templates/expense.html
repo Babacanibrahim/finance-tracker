@@ -52,7 +52,11 @@ Gider Ekleme
       <thead>
         <tr>
           <th>Harcama Miktarı</th>
-          <th>Harcama Tarihi</th>
+          <th><a href="{{url_for('expense',order = 'desc' if order == 'asc' else 'asc')}}">Harcama Tarihi {% if order == 'asc'%}
+              &#x25B2;
+              {% else %}
+              &#x25BC;
+              {% endif %} </a></th>
           <th>Harcama Kategorisi</th>
         </tr>
       </thead>
