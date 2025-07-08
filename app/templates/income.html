@@ -51,20 +51,51 @@ Gelir Ekleme
 
       <thead>
         <tr>
-          <th>Gelir Miktarı </th>
-          <th><a href="{{url_for('income',order = 'desc' if order == 'asc' else 'asc')}}">Gelir Tarihi {% if order == 'asc'%}
+          <th>
+            <a href="{{ url_for('income', order_amount = 'desc' if order_amount == 'asc' else 'asc') }}">
+              Gelir Miktarı
+              {% if request.args.get('order_amount') %}
+              {% if order_amount == 'asc' %}
               &#x25B2;
               {% else %}
               &#x25BC;
-              {% endif %} </a></th>
-          <th>Gelir Kategorisi </th>
+              {% endif %}
+              {% endif %}
+            </a>
+          </th>
+
+          <th>
+            <a href="{{ url_for('income', order_date = 'desc' if order_date == 'asc' else 'asc') }}">
+              Gelir Tarihi
+              {% if request.args.get('order_date') %}
+              {% if order_date == 'asc' %}
+              &#x25B2;
+              {% else %}
+              &#x25BC;
+              {% endif %}
+              {% endif %}
+            </a>
+          </th>
+
+          <th>
+            <a href="{{ url_for('income', order_category = 'desc' if order_category == 'asc' else 'asc') }}">
+              Gelir Kategorisi
+              {% if request.args.get('order_category') %}
+              {% if order_category == 'asc' %}
+              &#x25B2;
+              {% else %}
+              &#x25BC;
+              {% endif %}
+              {% endif %}
+            </a>
+          </th>
         </tr>
       </thead>
 
       <tbody>
         {% for income in incomes %}
         <tr>
-          <td>{{income.amount}}</td>
+          <td>{{income.amount}} ₺</td>
           <td>{{income.date}}</td>
           <td>{{income.income_category.name}}</td>
         </tr>

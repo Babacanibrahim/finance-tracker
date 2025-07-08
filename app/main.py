@@ -255,15 +255,39 @@ def income():
         flash("Gelir başarıyla eklendi","success")
         return redirect(url_for("income"))
     
-    order = request.args.get("order","asc")
+    incomes = []
+    order_category = request.args.get("order_category","asc")
+    order_date = request.args.get("order_date","asc")
+    order_amount = request.args.get("order_amount","asc")
 
-    if order =="desc":
-        incomes = Income.query.filter_by(user_id=session["user_id"]).order_by(Income.date.desc()).all()
+    # Kategori sıralama
+    if "order_category" in request.args:
+        if order_category =="desc":
+            incomes = Income.query.join(Income_Category).filter(Income.user_id == session["user_id"]).order_by(Income_Category.name.desc()).all()
+
+        else:
+            incomes = Income.query.join(Income_Category).filter(Income.user_id == session["user_id"]).order_by(Income_Category.name.asc()).all()
+
+    # Tarihe göre sıralama     
+    elif "order_date" in request.args:
+        if order_date =="desc":
+            incomes = Income.query.filter_by(user_id=session["user_id"]).order_by(Income.date.desc()).all()
+
+        else:
+            incomes = Income.query.filter_by(user_id=session["user_id"]).order_by(Income.date.asc()).all()
+
+    # Miktara göre sıralama
+    elif "order_amount" in request.args:
+        if order_amount =="desc":
+            incomes = Income.query.filter_by(user_id=session["user_id"]).order_by(Income.amount.desc()).all()
+
+        else:
+            incomes = Income.query.filter_by(user_id=session["user_id"]).order_by(Income.amount.asc()).all()
 
     else:
-        incomes = Income.query.filter_by(user_id=session["user_id"]).order_by(Income.date.asc()).all()
+        incomes = Income.query.filter_by(user_id=session["user_id"]).order_by(Income.date.desc()).all()
 
-    return render_template ("income.html",form=form, incomes = incomes, order = order)
+    return render_template ("income.html",form=form, incomes = incomes, order_date = order_date, order_amount = order_amount, order_category = order_category)
 
 
 # Harcama ekleme
@@ -285,17 +309,40 @@ def expense():
         db.session.commit()
         flash("Harcamanız başarıyla kaydedildi.","success")
         return redirect(url_for("expense"))
-    
-    order = request.args.get("order","asc")
+    expenses = []
+    order_category = request.args.get("order_category","asc")
+    order_date = request.args.get("order_date","asc")
+    order_amount = request.args.get("order_amount","asc")
 
-    if order =="desc":
-        expenses = Expense.query.filter_by(user_id=session["user_id"]).order_by(Expense.date.desc()).all()
+    # Kategori sıralama
+    if "order_category" in request.args:
+        if order_category =="desc":
+            expenses = Expense.query.join(Expense_Category).filter(Expense.user_id == session["user_id"]).order_by(Expense_Category.name.desc()).all()
+
+        else:
+            expenses = Expense.query.join(Expense_Category).filter(Expense.user_id == session["user_id"]).order_by(Expense_Category.name.asc()).all()
+
+    # Tarihe göre sıralama     
+    elif "order_date" in request.args:
+        if order_date =="desc":
+            expenses = Expense.query.filter_by(user_id=session["user_id"]).order_by(Expense.date.desc()).all()
+
+        else:
+            expenses = Expense.query.filter_by(user_id=session["user_id"]).order_by(Expense.date.asc()).all()
+
+    # Miktara göre sıralama
+    elif "order_amount" in request.args:
+        if order_amount =="desc":
+            expenses = Expense.query.filter_by(user_id=session["user_id"]).order_by(Expense.amount.desc()).all()
+
+        else:
+            expenses = Expense.query.filter_by(user_id=session["user_id"]).order_by(Expense.amount.asc()).all()
 
     else:
-        expenses = Expense.query.filter_by(user_id=session["user_id"]).order_by(Expense.date.asc()).all()
+        expenses = Expense.query.filter_by(user_id=session["user_id"]).order_by(Expense.date.desc()).all()
 
     
-    return render_template ("expense.html",form=form, expenses = expenses, order = order)
+    return render_template ("expense.html",form=form, order_amount = order_amount, order_category = order_category, order_date = order_date, expenses = expenses)
 
 @app.route("/dashboard")
 @login_required

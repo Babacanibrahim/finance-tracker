@@ -51,19 +51,50 @@ Gider Ekleme
     <table>
       <thead>
         <tr>
-          <th>Harcama Miktarı</th>
-          <th><a href="{{url_for('expense',order = 'desc' if order == 'asc' else 'asc')}}">Harcama Tarihi {% if order == 'asc'%}
+          <th>
+            <a href="{{ url_for('expense', order_amount = 'desc' if order_amount == 'asc' else 'asc') }}">
+              Harcama Miktarı
+              {% if request.args.get('order_amount') %}
+              {% if order_amount == 'asc' %}
               &#x25B2;
               {% else %}
               &#x25BC;
-              {% endif %} </a></th>
-          <th>Harcama Kategorisi</th>
+              {% endif %}
+              {% endif %}
+            </a>
+          </th>
+
+          <th>
+            <a href="{{ url_for('expense', order_date = 'desc' if order_date == 'asc' else 'asc') }}">
+              Harcama Tarihi
+              {% if request.args.get('order_date') %}
+              {% if order_date == 'asc' %}
+              &#x25B2;
+              {% else %}
+              &#x25BC;
+              {% endif %}
+              {% endif %}
+            </a>
+          </th>
+
+          <th>
+            <a href="{{ url_for('expense', order_category = 'desc' if order_category == 'asc' else 'asc') }}">
+              Harcama Kategorisi
+              {% if request.args.get('order_category') %}
+              {% if order_category == 'asc' %}
+              &#x25B2;
+              {% else %}
+              &#x25BC;
+              {% endif %}
+              {% endif %}
+            </a>
+          </th>
         </tr>
       </thead>
       <tbody>
         {% for expense in expenses %}
         <tr>
-          <td>{{expense.amount}}</td>
+          <td>{{expense.amount}} ₺</td>
           <td>{{expense.date}}</td>
           <td>{{expense.expense_category.name}}</td>
         </tr>
