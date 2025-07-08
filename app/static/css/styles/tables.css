@@ -14,6 +14,8 @@ thead {
 thead th {
     padding: 12px;
     text-align: left;
+    border: 1px solid #ddd;
+    /* Başlık hücrelerine çizgi */
 }
 
 tbody tr:hover {
@@ -22,7 +24,8 @@ tbody tr:hover {
 
 tbody td {
     padding: 10px 12px;
-    border-bottom: 1px solid #ddd;
+    border: 1px solid #ddd;
+    /* Veri hücrelerine çizgi */
 }
 
 /* Responsive için küçük ekranlarda tabloyu kaydırılabilir yapalım */

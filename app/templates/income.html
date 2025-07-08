@@ -89,6 +89,8 @@ Gelir Ekleme
               {% endif %}
             </a>
           </th>
+          <th >Güncelle</th>
+          <th >Sil</th>
         </tr>
       </thead>
 
@@ -98,6 +100,7 @@ Gelir Ekleme
           <td>{{income.amount}} ₺</td>
           <td>{{income.date}}</td>
           <td>{{income.income_category.name}}</td>
+          <td><a href="{{ url_for('edit_income', id=income.id) }}"><button type="button" class="btn btn-info mt-1">Güncelle</button></a></td>
         </tr>
 
         {% endfor %}

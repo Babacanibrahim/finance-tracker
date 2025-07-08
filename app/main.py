@@ -289,6 +289,30 @@ def income():
 
     return render_template ("income.html",form=form, incomes = incomes, order_date = order_date, order_amount = order_amount, order_category = order_category)
 
+# Gelir Düzenleme
+@app.route("/edit_income<int:id>", methods = ["GET","POST"])
+@login_required
+def edit_income(id):
+    income = Income.query.get(id)
+    form = IncomeForm()
+    categories = Income_Category.query.all()
+    form.category.choices= [(c.id, c.name) for c in categories]
+
+    if request.method == "GET":
+        form.amount.data = income.amount
+        form.category.data = income.category_id
+        form.date.data = income.date
+        return render_template("edit_income.html", form = form, income = income)
+
+    elif form.validate_on_submit():
+        income.amount = form.amount.data
+        income.category_id = form.category.data
+        income.date = form.date.data
+        db.session.commit()
+        return redirect(url_for("income"))
+    else:
+        flash("BİR HATA OLUŞTU.","danger")
+    return render_template("edit_income.html", form = form, income = income)
 
 # Harcama ekleme
 @app.route("/expense",methods=["GET","POST"])
