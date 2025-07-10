@@ -1,9 +1,253 @@
 {% extends "layout.html" %}
 
 {% block body %}
-<p>Hoşgeldiniz <strong>{{user.name}} {{user.surname}}</strong>,</p>
+
 <h2>Kişisel Finans Analiziniz</h2>
 <hr><hr>
+
+<!-- Tarih Aralığı Seçimi -->
+<form method="GET" action="{{ url_for('dashboard') }}">
+  <div class="form-group">
+    <select name="date_range" class="form-control w-auto" onchange="this.form.submit()">
+      <option value="all" {% if selected_range == 'all' %}selected{% endif %}>Tümü</option>
+      <option value="1_week" {% if selected_range == '1_week' %}selected{% endif %}>Son 1 Hafta</option>
+      <option value="1_month" {% if selected_range == '1_month' %}selected{% endif %}>Son 1 Ay</option>
+      <option value="3_month" {% if selected_range == '3_month' %}selected{% endif %}>Son 3 Ay</option>
+      <option value="6_month" {% if selected_range == '6_month' %}selected{% endif %}>Son 6 Ay</option>
+      <option value="1_year" {% if selected_range == '1_year' %}selected{% endif %}>Son 1 Yıl</option>
+      <option value="5_year" {% if selected_range == '5_year' %}selected{% endif %}>Son 5 Yıl</option>
+    </select>
+  </div>
+</form>
+
+<!-- Line Chart Alanı -->
+<div class="container my-4">
+  <div class="card shadow-sm">
+    <div class="card-header bg-info text-black">
+      <h5 class="mb-0">Gelir-Gider Grafiği</h5>
+    </div>
+    <div class="card-body">
+      <canvas id="myChart" width="1000" height="300"></canvas>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('myChart');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: {{ labels | tojson }},
+      datasets: [
+        {
+          label: 'Gelir (₺)',
+          data: {{ income_data | tojson }},
+          borderColor: 'green',
+          backgroundColor: 'rgba(0, 128, 0, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4
+        },
+        {
+          label: 'Gider (₺)',
+          data: {{ expense_data | tojson }},
+          borderColor: 'red',
+          backgroundColor: 'rgba(111, 34, 27, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+</script>
+
+<!-- Analiz Kartları -->
+{% if income_data or expense_data %}
+<div class="container d-flex justify-content-center my-4">
+  {% if rapor == "Kar" and state is not none %}
+    <div class="card bg-success text-white w-100" style="max-width: 600px;">
+      <div class="card-header font-weight-bold" style="font-size: 1.25rem;">
+        Bu dönemdeki gelirlerinizin giderlerinize oranı %{{ state }}
+      </div>
+      <div class="card-body" style="font-size: 1.1rem;">
+        {% if state >= 200 %}
+          <p>Gelirleriniz giderlerinizi 2 kat aşmış. Finansal disiplininiz olağanüstü!</p>
+        {% elif state >= 100 %}
+          <p>Gelirleriniz giderlerinizi ikiye katlamış. Akıllı harcamalarla çok başarılı bir dönem geçirmişsiniz.</p>
+        {% elif state >= 50 %}
+          <p>Gelir-gider dengeniz oldukça sağlıklı. İyi yönetilmiş bir bütçe planlaması sizi ileri taşıyor.</p>
+        {% elif state >= 30 %}
+          <p>Gelirleriniz giderlerinizi aşıyor. İstikrarlı bir şekilde ilerliyorsunuz.</p>
+        {% else %}
+          <p>Az da olsa kârdasınız. Küçük adımlarla büyük başarılar mümkün!</p>
+        {% endif %}
+      </div>
+    </div>
+
+  {% elif rapor == "Zarar" and state is not none %}
+    <div class="card bg-danger text-white w-100" style="max-width: 600px;">
+      <div class="card-header font-weight-bold" style="font-size: 1.25rem;">
+        Bu dönemdeki giderlerinizin gelirlerinize oranı %{{ state }}
+      </div>
+      <div class="card-body" style="font-size: 1.1rem;">
+        {% if state >= 200 %}
+          <p>Giderleriniz gelirlerinizi 2 kat aşmış. Acilen harcamaları kontrol altına almalısınız.</p>
+        {% elif state >= 100 %}
+          <p>Giderleriniz gelirlerinizi aşmış. Bütçe planlaması yapmanız faydalı olacaktır.</p>
+        {% elif state >= 50 %}
+          <p>Bu dönem biraz zor geçmiş olabilir. Harcamalarınızı gözden geçirin.</p>
+        {% elif state >= 30 %}
+          <p>Giderleriniz gelirlerinize yaklaşıyor. Daha dikkatli olmanız gerekebilir.</p>
+        {% else %}
+          <p>Giderleriniz az da olsa gelirlerinizi geçmiş. Küçük önlemlerle toparlayabilirsiniz.</p>
+        {% endif %}
+      </div>
+    </div>
+
+  {% elif rapor == "Aynı" %}
+    <div class="card bg-secondary text-white w-100" style="max-width: 600px;">
+      <div class="card-header font-weight-bold" style="font-size: 1.25rem;">
+        Bu dönemde gelir ve giderleriniz dengede.
+      </div>
+      <div class="card-body" style="font-size: 1.1rem;">
+        <p>Finansal denge sağlamışsınız. Harcamalarınızı kontrol altında tutarak birikime odaklanabilirsiniz.</p>
+      </div>
+    </div>
+
+  {% elif total_income == 0 and state is none %}
+    <div class="card text-white bg-dark w-100" style="max-width: 600px;">
+      <div class="card-body">
+        Gelir bilgisi olmadığı için hesaplama yapılamadı. Ancak bu dönemde toplam gideriniz: {{ total_expense }} ₺
+      </div>
+    </div>
+
+  {% elif total_expense == 0 and state is none %}
+    <div class="card text-white bg-dark w-100" style="max-width: 600px;">
+      <div class="card-body">
+        Gider bilgisi olmadığı için hesaplama yapılamadı. Ancak bu dönemde toplam geliriniz: {{ total_income }} ₺
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+{% else %}
+<!-- Veri yoksa -->
+<div class="d-flex justify-content-center align-items-center" style="min-height: 300px;">
+  <div class="card text-white bg-info text-center" style="max-width: 600px; width: 100%;">
+    <div class="card-body">
+      <h5 class="card-title">Bilgilendirme</h5>
+      <p class="card-text" style="font-size: 1.1rem;">
+        Bu döneme ait gelir - gider bilgisi bulunmamaktadır.<br>
+        Dilerseniz <strong>dönemi değiştirebilir</strong> veya <strong>gelir - gider ekleyebilirsiniz</strong>.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Butonlar -->
+<div class="text-center mt-4">
+  <a href="/income" class="btn btn-primary btn-lg mx-2">Gelir Ekle</a>
+  <a href="/expense" class="btn btn-secondary btn-lg mx-2">Gider Ekle</a>
+</div>
+{% endif %}
+
+<!-- Pie Chartlar Yanyana -->
+<div class="container my-4">
+  <div class="card shadow-sm">
+    <div class="card-header bg-info text-black">
+      <h5 class="mb-0">Dönemsel Gelir & Gider Kategorileri</h5>
+    </div>
+    <div class="card-body">
+      <div class="d-flex justify-content-center align-items-start flex-wrap gap-4">
+        <!-- Gider Grafiği -->
+        <div style="max-width: 400px; width: 100%;">
+          <canvas id="ExpensePieChart" style="width:400px; height:400px; display:block; margin:0 auto;"></canvas>
+        </div>
+
+        <!-- Gelir Grafiği -->
+        <div style="max-width: 400px; width: 100%;">
+          <canvas id="IncomePieChart" style="width:400px; height:400px; display:block; margin:0 auto;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  new Chart(document.getElementById('ExpensePieChart'), {
+    type: 'pie',
+    data: {
+      labels: {{ label_expense_category | tojson }},
+      datasets: [{
+        label: 'Gider Dağılımı',
+        data: {{ data_expense_category | tojson }},
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.7)',
+          'rgba(54, 162, 235, 0.7)',
+          'rgba(255, 206, 86, 0.7)',
+          'rgba(75, 192, 192, 0.7)'
+        ],
+        borderColor: ['white', 'white', 'white', 'white'],
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          position: 'right'
+        },
+        title: {
+          display: true,
+          text: 'Dönemsel Gelir Kategorileri'
+        }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('IncomePieChart'), {
+    type: 'pie',
+    data: {
+      labels: {{ label_income_category | tojson }},
+      datasets: [{
+        label: 'Gelir Dağılımı',
+        data: {{ data_income_category | tojson }},
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.7)',
+          'rgba(54, 162, 235, 0.7)',
+          'rgba(255, 206, 86, 0.7)',
+          'rgba(75, 192, 192, 0.7)'
+        ],
+        borderColor: ['white', 'white', 'white', 'white'],
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          position: 'right'
+        },
+        title: {
+          display: true,
+          text: 'Dönemsel Gider Kategorileri'
+        }
+      }
+    }
+  });
+</script>
 
 
 {% endblock body %}

@@ -1,21 +1,20 @@
 {% extends "layout.html" %}
 
 {% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/styles/tables.css') }}">
-{% endblock head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles/tables.css') }}" />
+{% endblock %}
 
 {% block title %}
-Gelir Ekleme
-{% endblock title %}
+Gelir İşlemleri
+{% endblock  title %}
 
 {% block body %}
-<p>Hoşgeldiniz <strong>{{user.name}} {{user.surname}}</strong>,</p>
+<p>Hoşgeldiniz <strong>{{ user.name }} {{ user.surname }}</strong>,</p>
 <h2>Kişisel Gelir Tablonuz</h2>
-<hr>
-<hr>
+<hr /><hr />
 
 <div style="display: flex; gap: 20px; align-items: flex-start;">
-
+  
   <form method="POST" style="flex: 1;">
     {{ form.hidden_tag() }}
 
@@ -45,21 +44,21 @@ Gelir Ekleme
 
     <button type="submit" class="btn btn-primary mt-3">Gelir Ekle</button>
   </form>
-  <br>
-  <form style="flex: 1;">
-    <table>
+  <!-- Gelirler Tablosu -->
 
+  <div style="flex: 1; overflow-x:auto;">
+    <table>
       <thead>
         <tr>
           <th>
             <a href="{{ url_for('income', order_amount = 'desc' if order_amount == 'asc' else 'asc') }}">
               Gelir Miktarı
               {% if request.args.get('order_amount') %}
-              {% if order_amount == 'asc' %}
-              &#x25B2;
-              {% else %}
-              &#x25BC;
-              {% endif %}
+                {% if order_amount == 'asc' %}
+                  &#x25B2;
+                {% else %}
+                  &#x25BC;
+                {% endif %}
               {% endif %}
             </a>
           </th>
@@ -68,11 +67,11 @@ Gelir Ekleme
             <a href="{{ url_for('income', order_date = 'desc' if order_date == 'asc' else 'asc') }}">
               Gelir Tarihi
               {% if request.args.get('order_date') %}
-              {% if order_date == 'asc' %}
-              &#x25B2;
-              {% else %}
-              &#x25BC;
-              {% endif %}
+                {% if order_date == 'asc' %}
+                  &#x25B2;
+                {% else %}
+                  &#x25BC;
+                {% endif %}
               {% endif %}
             </a>
           </th>
@@ -81,33 +80,77 @@ Gelir Ekleme
             <a href="{{ url_for('income', order_category = 'desc' if order_category == 'asc' else 'asc') }}">
               Gelir Kategorisi
               {% if request.args.get('order_category') %}
-              {% if order_category == 'asc' %}
-              &#x25B2;
-              {% else %}
-              &#x25BC;
-              {% endif %}
+                {% if order_category == 'asc' %}
+                  &#x25B2;
+                {% else %}
+                  &#x25BC;
+                {% endif %}
               {% endif %}
             </a>
           </th>
-          <th >Güncelle</th>
-          <th >Sil</th>
+
+          <th>Güncelle</th>
+          <th>Sil</th>
         </tr>
       </thead>
 
       <tbody>
         {% for income in incomes %}
         <tr>
-          <td>{{income.amount}} ₺</td>
-          <td>{{income.date}}</td>
-          <td>{{income.income_category.name}}</td>
-          <td><a href="{{ url_for('edit_income', id=income.id) }}"><button type="button" class="btn btn-info mt-1">Güncelle</button></a></td>
+          <td data-label="Gelir Miktarı">{{ income.amount }} ₺</td>
+          <td data-label="Gelir Tarihi">{{ income.date.strftime('%d/%m/%Y') }}</td>
+          <td data-label="Gelir Kategorisi">{{ income.income_category.name }}</td>
+          <td data-label="Güncelle">
+            <a href="{{ url_for('edit_income', id=income.id) }}">
+              <button type="button" class="btn btn-info mt-1">Güncelle</button>
+            </a>
+          </td>
+          <td data-label="Sil">
+            <!-- Sil butonu modal açacak -->
+            <button type="button" class="btn btn-danger mt-1" data-toggle="modal" data-target="#deleteModal{{ income.id }}">
+              Sil
+            </button>
+
+            <!-- Modal -->
+            <div
+              class="modal fade"
+              id="deleteModal{{ income.id }}"
+              tabindex="-1"
+              role="dialog"
+              aria-labelledby="deleteModalLabel{{ income.id }}"
+              aria-hidden="true"
+            >
+              <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                  <form action="{{ url_for('delete_income', id=income.id) }}" method="POST">
+                    {{ form.csrf_token }}
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="deleteModalLabel{{ income.id }}">Gelir Silme Onayı</h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Kapat">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                    <div class="modal-body">
+                      <p>{{ income.amount }} ₺ tutarındaki geliri silmek istediğinize emin misiniz?</p>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-dismiss="modal">İptal</button>
+                      <button type="submit" class="btn btn-danger">Evet, Sil</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </td>
         </tr>
-
         {% endfor %}
+        {% if incomes %}
+        <tr style="background-color:#696969; color: white;"><td colspan ="5">Toplam Geliriniz : {{sum_incomes}} ₺</td></tr>
+        {% else %}
+        <tr><td colspan ="5">Henüz gelir bilgisi girmemişsiniz.</td></tr>
+        {% endif %}
       </tbody>
-
-
     </table>
-  </form>
+  </div>
 </div>
-{% endblock body %}
+{% endblock %}

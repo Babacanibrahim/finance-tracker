@@ -29,7 +29,7 @@
   <div class="collapse navbar-collapse" id="navbarNavDropdown">
     <ul class="navbar-nav">
       <li class="nav-item">
-        <a class="nav-link" style="font-weight: bold;" href="about">Hakkımızda</a>
+        <a class="nav-link" style="font-weight: bold;" href="/about">Hakkımızda</a>
       </li>
     </ul>
     <ul class="navbar-nav ml-auto">
@@ -40,26 +40,26 @@
           {{user.name}} {{user.surname}}
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-          <a class="dropdown-item" href="profile">Profil</a>
-          <a class="dropdown-item" href="income">Gelir Ekle</a>
-          <a class="dropdown-item" href="expense">Gider Ekle</a>
-          <a class="dropdown-item" href="dashboard">Finans Analiz</a>
-          <a class="dropdown-item" href="repassword">Şifre Değiştir</a>
+          <a class="dropdown-item" href="/profile">Profil</a>
+          <a class="dropdown-item" href="/income">Gelir İşlemleri</a>
+          <a class="dropdown-item" href="/expense">Gider İşlemleri</a>
+          <a class="dropdown-item" href="/dashboard">Finans Analiz</a>
+          <a class="dropdown-item" href="/repassword">Şifre Değiştir</a>
         </div>
       </li>
       <li class="nav-item active">
-        <a class="nav-link text-danger" style="font-weight: bold;" href="logout">Çıkış Yap <span class="sr-only">(current)</span></a>
+        <a class="nav-link text-danger" style="font-weight: bold;" href="/logout">Çıkış Yap <span class="sr-only">(current)</span></a>
       </li>
     
     {% else %}
     <li class="nav-item active">
-       <a class="nav-link" href="login" style="color: lightgreen; font-weight: bold;">Giriş Yap <span class="sr-only">(current)</span>
+       <a class="nav-link" href="/login" style="color: lightgreen; font-weight: bold;">Giriş Yap <span class="sr-only">(current)</span>
         </a>
     </li>
 
       
       <li class="nav-item active">
-        <a class="nav-link" style="font-weight: bold;" href="register">Kayıt Ol <span class="sr-only">(current)</span></a>
+        <a class="nav-link" style="font-weight: bold;" href="/register">Kayıt Ol <span class="sr-only">(current)</span></a>
       </li>
 
     {% endif %}

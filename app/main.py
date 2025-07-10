@@ -4,8 +4,9 @@ from wtforms import Form,StringField,TextAreaField,PasswordField,validators,Vali
 from passlib.hash import sha256_crypt
 from functools import wraps
 from flask_wtf import FlaskForm
-from sqlalchemy import and_
-import numpy as np
+from sqlalchemy import and_, func
+from flask_wtf.csrf import generate_csrf
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
@@ -162,6 +163,11 @@ def index():
 def about():
     return render_template("about.html")
 
+# Otomatik Csrf Token
+@app.context_processor
+def inject_csrf_token():
+    return dict(csrf_token=generate_csrf())
+
 #Otomatik User Gönderme
 @app.context_processor
 def inject_user():
@@ -254,7 +260,7 @@ def income():
         db.session.commit()
         flash("Gelir başarıyla eklendi","success")
         return redirect(url_for("income"))
-    
+    sum_incomes = db.session.query(func.sum(Income.amount)).filter_by(user_id=session["user_id"]).scalar()
     incomes = []
     order_category = request.args.get("order_category","asc")
     order_date = request.args.get("order_date","asc")
@@ -287,10 +293,10 @@ def income():
     else:
         incomes = Income.query.filter_by(user_id=session["user_id"]).order_by(Income.date.desc()).all()
 
-    return render_template ("income.html",form=form, incomes = incomes, order_date = order_date, order_amount = order_amount, order_category = order_category)
+    return render_template ("income.html",form=form, incomes = incomes, order_date = order_date, order_amount = order_amount, order_category = order_category, sum_incomes = sum_incomes)
 
 # Gelir Düzenleme
-@app.route("/edit_income<int:id>", methods = ["GET","POST"])
+@app.route("/edit_income/<int:id>", methods = ["GET","POST"])
 @login_required
 def edit_income(id):
     income = Income.query.get(id)
@@ -314,6 +320,17 @@ def edit_income(id):
         flash("BİR HATA OLUŞTU.","danger")
     return render_template("edit_income.html", form = form, income = income)
 
+# Gelir Silme
+@app.route("/delete_income/<int:id>", methods=["POST"])
+@login_required
+def delete_income(id):
+    income = Income.query.get_or_404(id)
+    db.session.delete(income)
+    db.session.commit()
+    flash("Gelir başarıyla silindi.", "success")
+    return redirect(url_for("income"))
+    
+
 # Harcama ekleme
 @app.route("/expense",methods=["GET","POST"])
 @login_required
@@ -334,6 +351,7 @@ def expense():
         flash("Harcamanız başarıyla kaydedildi.","success")
         return redirect(url_for("expense"))
     expenses = []
+    sum_expenses = db.session.query(func.sum(Expense.amount)).filter_by(user_id=session["user_id"]).scalar()
     order_category = request.args.get("order_category","asc")
     order_date = request.args.get("order_date","asc")
     order_amount = request.args.get("order_amount","asc")
@@ -366,7 +384,7 @@ def expense():
         expenses = Expense.query.filter_by(user_id=session["user_id"]).order_by(Expense.date.desc()).all()
 
     
-    return render_template ("expense.html",form=form, order_amount = order_amount, order_category = order_category, order_date = order_date, expenses = expenses)
+    return render_template ("expense.html",form=form, order_amount = order_amount, order_category = order_category, order_date = order_date, expenses = expenses, sum_expenses = sum_expenses)
 
 # Harcama Düzenleme
 @app.route("/edit_expense<int:id>", methods = ["GET","POST"])
@@ -393,10 +411,98 @@ def edit_expense(id):
         flash("BİR HATA OLUŞTU.","danger")
     return render_template("edit_expense.html", form = form, expense = expense)
 
+# Harcama Silme
+@app.route("/delete_expense/<int:id>", methods=["POST"])
+@login_required
+def delete_expense(id):
+    expense = Expense.query.get_or_404(id)
+    db.session.delete(expense)
+    db.session.commit()
+    flash("Gelir başarıyla silindi.", "success")
+    return redirect(url_for("expense"))
+
+# Finansal Grafikler Ve Analiz
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    return render_template("dashboard.html")
+    incomes = Income.query.filter_by(user_id = session["user_id"]).order_by(Income.date).all()
+    expenses = Expense.query.filter_by(user_id = session["user_id"]).order_by(Expense.date).all()
+
+    selected_range = request.args.get("date_range","all")
+    now = datetime.utcnow().date()
+
+    # Dönemlere ayırma
+    if selected_range == "1_week":
+        start_date = now - timedelta(days=7)
+    elif selected_range =="1_month" : 
+        start_date = now - timedelta(days=30)
+    elif selected_range =="3_month" : 
+        start_date = now - timedelta(days=90)
+    elif selected_range =="6_month" : 
+        start_date = now - timedelta(days = 180)
+    elif selected_range =="1_year" : 
+        start_date = now - timedelta(days=365)
+    elif selected_range =="5_year" : 
+        start_date = now - timedelta(days=5*365)  
+    else:
+        start_date = None      
+    
+    #Tarih filtreleme
+    if start_date:
+        incomes = [inc for inc in incomes if inc.date >= start_date]
+        expenses = [exp for exp in expenses if exp.date >= start_date]
+
+    #Tarihleri uniq yap
+    all_dates = sorted(set([inc.date for inc in incomes] + [exp.date for exp in expenses]))
+
+    labels = [date.strftime("%d/%m/%Y") for date in all_dates]
+
+    income_data = []
+    expense_data = []
+
+    # Arraylere dahil etme
+    for date in all_dates:
+        income_on_date = sum(float(inc.amount) for inc in incomes if inc.date == date)
+        expense_on_date = sum(float(exp.amount) for exp in expenses if exp.date == date)
+        income_data.append(income_on_date)
+        expense_data.append(expense_on_date)
+
+    total_income = sum(income_data)
+    total_expense = sum(expense_data)
+
+    # Finansal analiz raporu
+    rapor = ""
+    if  total_income < total_expense :
+        rapor = "Zarar"
+        try:
+            state = int((total_expense/total_income)*100)
+        except:
+            flash("Gelir bilgisi olmadığı için hesaplama yapılamadı, ancak bu dönemde toplam gideriniz {}".format(total_expense))
+            state = None
+   
+    elif total_income > total_expense:
+        rapor = "Kar"
+        try:
+            state = int((total_income/total_expense)*100)
+        except:
+            state = None
+       
+    else:
+        rapor = "Aynı"
+        state =None
+
+    #Kategorileri Göre Pie Chart Verileri(Expense)
+
+    expense_category_totals = (db.session.query(Expense_Category.name, func.sum(Expense.amount)).join(Expense, Expense.category_id == Expense_Category.id).filter(Expense.user_id == session["user_id"]).group_by(Expense_Category.name).all())
+    label_expense_category = [cat for cat, total_expense_category in expense_category_totals]
+    data_expense_category = [float(total_expense_category) for cat, total_expense_category in expense_category_totals]
+
+    #Kategorileri Göre Pie Chart Verileri(Income)
+    income_category_totals = (db.session.query(Income_Category.name, func.sum(Income.amount)).join(Income, Income.category_id == Income_Category.id).filter(Income.user_id == session["user_id"]).group_by(Income_Category.name).all())
+    label_income_category = [cat for cat, total_income_category in income_category_totals]
+    data_income_category = [float(total_income_category) for cat, total_income_category in income_category_totals]
+
+    return render_template("dashboard.html", label_income_category = label_income_category, data_income_category = data_income_category, label_expense_category = label_expense_category, data_expense_category = data_expense_category, expense_data = expense_data, income_data = income_data, labels = labels, selected_range = selected_range, rapor = rapor, state = state, total_income = total_income, total_expense = total_expense)
 
 # Yeni Şifre Belirleme
 @app.route("/change_password", methods=["GET", "POST"])
