@@ -187,10 +187,10 @@
   new Chart(document.getElementById('ExpensePieChart'), {
     type: 'pie',
     data: {
-      labels: {{ label_expense_category | tojson }},
+      labels: {{ label_pie_expenses | tojson }},
       datasets: [{
         label: 'Gider Dağılımı',
-        data: {{ data_expense_category | tojson }},
+        data: {{ data_pie_expenses | tojson }},
         backgroundColor: [
           'rgba(255, 99, 132, 0.7)',
           'rgba(54, 162, 235, 0.7)',
@@ -219,10 +219,10 @@
   new Chart(document.getElementById('IncomePieChart'), {
     type: 'pie',
     data: {
-      labels: {{ label_income_category | tojson }},
+      labels: {{ label_pie_incomes | tojson }},
       datasets: [{
         label: 'Gelir Dağılımı',
-        data: {{ data_income_category | tojson }},
+        data: {{ data_pie_incomes | tojson }},
         backgroundColor: [
           'rgba(255, 99, 132, 0.7)',
           'rgba(54, 162, 235, 0.7)',

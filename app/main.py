@@ -421,6 +421,7 @@ def delete_expense(id):
     flash("Gelir başarıyla silindi.", "success")
     return redirect(url_for("expense"))
 
+
 # Finansal Grafikler Ve Analiz
 @app.route("/dashboard")
 @login_required
@@ -491,18 +492,48 @@ def dashboard():
         rapor = "Aynı"
         state =None
 
-    #Kategorileri Göre Pie Chart Verileri(Expense)
+    #PİE CHART INCOMES
+    income_query = db.session.query(Income).filter(Income.user_id ==session["user_id"])
+    if start_date:
+        income_query = income_query.filter(Income.date>=start_date)
+    incomes_pie = income_query.all()
 
-    expense_category_totals = (db.session.query(Expense_Category.name, func.sum(Expense.amount)).join(Expense, Expense.category_id == Expense_Category.id).filter(Expense.user_id == session["user_id"]).group_by(Expense_Category.name).all())
-    label_expense_category = [cat for cat, total_expense_category in expense_category_totals]
-    data_expense_category = [float(total_expense_category) for cat, total_expense_category in expense_category_totals]
+    income_category_totals_query =db.session.query(Income_Category.name, func.sum(Income.amount)).join(Income, Income.category_id ==
+    Income_Category.id).filter(Income.user_id==session["user_id"])
 
-    #Kategorileri Göre Pie Chart Verileri(Income)
-    income_category_totals = (db.session.query(Income_Category.name, func.sum(Income.amount)).join(Income, Income.category_id == Income_Category.id).filter(Income.user_id == session["user_id"]).group_by(Income_Category.name).all())
-    label_income_category = [cat for cat, total_income_category in income_category_totals]
-    data_income_category = [float(total_income_category) for cat, total_income_category in income_category_totals]
+    if start_date :
+        income_category_totals_query = income_category_totals_query.filter(Income.date>=start_date)
 
-    return render_template("dashboard.html", label_income_category = label_income_category, data_income_category = data_income_category, label_expense_category = label_expense_category, data_expense_category = data_expense_category, expense_data = expense_data, income_data = income_data, labels = labels, selected_range = selected_range, rapor = rapor, state = state, total_income = total_income, total_expense = total_expense)
+    income_category_totals_query = income_category_totals_query.group_by(Income_Category.name)
+    income_category_totals = income_category_totals_query.all()
+
+    label_pie_incomes = [name for name, _ in income_category_totals]
+    data_pie_incomes = [float(total) for _, total in income_category_totals]
+
+    #PİE CHART EXPENSES
+    expense_query = db.session.query(Expense).filter(Expense.user_id == session["user_id"])
+    if start_date:
+        expense_query = expense_query.filter(Expense.date >= start_date)
+    expenses = expense_query.all()
+
+    # GİDER KATEGORİ TOPLAMI
+    expense_category_totals_query = db.session.query(
+        Expense_Category.name,
+        func.sum(Expense.amount)
+    ).join(Expense, Expense.category_id == Expense_Category.id).filter(
+        Expense.user_id == session["user_id"]
+    )
+    if start_date:
+        expense_category_totals_query = expense_category_totals_query.filter(Expense.date >= start_date)
+
+    expense_category_totals_query = expense_category_totals_query.group_by(Expense_Category.name)
+    expense_category_totals = expense_category_totals_query.all()
+
+    # GİDER GRAFİĞİ İÇİN VERİLER
+    label_pie_expenses = [name for name, _ in expense_category_totals]
+    data_pie_expenses = [float(total) for _, total in expense_category_totals]
+
+    return render_template("dashboard.html", data_pie_incomes = data_pie_incomes, label_pie_incomes = label_pie_incomes, data_pie_expenses = data_pie_expenses, label_pie_expenses = label_pie_expenses, expense_data = expense_data, income_data = income_data, labels = labels, selected_range = selected_range, rapor = rapor, state = state, total_income = total_income, total_expense = total_expense)
 
 # Yeni Şifre Belirleme
 @app.route("/change_password", methods=["GET", "POST"])
