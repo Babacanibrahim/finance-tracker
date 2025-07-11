@@ -2,6 +2,44 @@
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/styles/tables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles/filter.css') }}">
+<style>
+  /* Ana container: yatay scroll olmasın, ekran yüksekliğine göre ayar */
+  .container-flex {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  /* Filtre panel ve sağ blok için responsive genişlik */
+  .filter-panel {
+    width: 260px;
+    min-width: 260px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    position: sticky;
+    top: 20px;
+  }
+
+  .right-block {
+    flex: 1;
+    min-width: 300px;
+    max-width: 100%;
+  }
+
+  /* Tablo dışına yatay scroll ekle */
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
+  /* Responsive tablonun hücrelerindeki data-label için */
+  @media (max-width: 600px) {
+    tbody td {
+      padding-left: 50% !important;
+    }
+  }
+</style>
 {% endblock head %}
 
 {% block title %}
@@ -9,147 +47,170 @@ Gider İşlemleri
 {% endblock title %}
 
 {% block body %}
-<p>Hoşgeldiniz <strong>{{user.name}} {{user.surname}}</strong>,</p>
+<p>Hoşgeldiniz <strong>{{ user.name }} {{ user.surname }}</strong>,</p>
 <h2>Kişisel Gider Tablonuz</h2>
 <hr><hr>
 
-<div style="display: flex; gap: 20px; align-items: flex-start;">
+<div class="container-flex">
 
-  <form method="POST" style="flex: 1;">
-    {{ form.hidden_tag() }}
+  <!-- FİLTRE PANELİ -->
+  <div>
+    <form method="GET" action="{{ url_for('expense') }}" class="filter-panel">
 
-    <div class="form-group">
-      {{ form.amount.label(class="form-label") }}
-      {{ form.amount(class="form-control", id="amount") }}
-      {% for error in form.amount.errors %}
-      <small class="text-danger">{{ error }}</small>
-      {% endfor %}
-    </div>
+      <!-- Kategoriler -->
+      <h5>Kategoriler</h5>
+      <div>
+        {% for category in categories %}
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="categories[]" value="{{ category.id }}" id="cat{{ category.id }}"
+            {% if category.id|string in selected_categories %}checked{% endif %}>
+          <label class="form-check-label" for="cat{{ category.id }}">{{ category.name }}</label>
+        </div>
+        {% endfor %}
+      </div>
 
-    <div class="form-group">
-      {{ form.category.label(class="form-label") }}
-      {{ form.category(class="form-control", id="category") }}
-      {% for error in form.category.errors %}
-      <small class="text-danger">{{ error }}</small>
-      {% endfor %}
-    </div>
+      <!-- Tutar Aralıkları -->
+      <h5>Tutar Aralıkları</h5>
+      <div>
+        {% for label, val in amount_ranges.items() %}
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="amounts[]" value="{{ val }}" id="amount{{ loop.index }}"
+            {% if val in selected_amounts %}checked{% endif %}>
+          <label class="form-check-label" for="amount{{ loop.index }}">{{ label }}</label>
+        </div>
+        {% endfor %}
+      </div>
 
-    <div class="form-group">
-      {{ form.date.label(class="form-label") }}
-      {{ form.date(class="form-control", id="date") }}
-      {% for error in form.date.errors %}
-      <small class="text-danger">{{ error }}</small>
-      {% endfor %}
-    </div>
+      <!-- Tarih Aralıkları -->
+      <h5>Tarih Aralıkları</h5>
+      <div>
+        {% for label, val in date_ranges.items() %}
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="dates[]" value="{{ val }}" id="date{{ loop.index }}"
+            {% if val in selected_dates %}checked{% endif %}>
+          <label class="form-check-label" for="date{{ loop.index }}">{{ label }}</label>
+        </div>
+        {% endfor %}
+      </div>
 
-    <button type="submit" class="btn btn-primary mt-3">Harcama Ekle</button>
-  </form>
-  <!-- Giderler Tablosu -->
-  <div style="flex: 1; overflow-x:auto;">
-    <table>
-      <thead>
-        <tr>
-          <th>
-            <a href="{{ url_for('expense', order_amount = 'desc' if order_amount == 'asc' else 'asc') }}">
-              Gider Miktarı
-              {% if request.args.get('order_amount') %}
-                {% if order_amount == 'asc' %}
-                  &#x25B2;
-                {% else %}
-                  &#x25BC;
-                {% endif %}
-              {% endif %}
-            </a>
-          </th>
+      <!-- Sıralama -->
+      <h5>Sıralama</h5>
+      <div>
+        <label for="order_by">Sıralama Ölçütü:</label>
+        <select name="order_by" class="form-control" onchange="this.form.submit()">
+          <option value="date_desc" {% if selected_order == 'date_desc' %}selected{% endif %}>Tarihe göre (Yeni → Eski)</option>
+          <option value="date_asc" {% if selected_order == 'date_asc' %}selected{% endif %}>Tarihe göre (Eski → Yeni)</option>
+          <option value="amount_desc" {% if selected_order == 'amount_desc' %}selected{% endif %}>Tutara göre (Azalan)</option>
+          <option value="amount_asc" {% if selected_order == 'amount_asc' %}selected{% endif %}>Tutara göre (Artan)</option>
+          <option value="category_asc" {% if selected_order == 'category_asc' %}selected{% endif %}>Kategoriye göre (A → Z)</option>
+          <option value="category_desc" {% if selected_order == 'category_desc' %}selected{% endif %}>Kategoriye göre (Z → A)</option>
+        </select>
+      </div>
 
-          <th>
-            <a href="{{ url_for('expense', order_date = 'desc' if order_date == 'asc' else 'asc') }}">
-              Gider Tarihi
-              {% if request.args.get('order_date') %}
-                {% if order_date == 'asc' %}
-                  &#x25B2;
-                {% else %}
-                  &#x25BC;
-                {% endif %}
-              {% endif %}
-            </a>
-          </th>
+      <button type="submit" class="btn btn-primary mt-3">Filtrele</button>
+    </form>
+  </div>
 
-          <th>
-            <a href="{{ url_for('expense', order_category = 'desc' if order_category == 'asc' else 'asc') }}">
-              Gider Kategorisi
-              {% if request.args.get('order_category') %}
-                {% if order_category == 'asc' %}
-                  &#x25B2;
-                {% else %}
-                  &#x25BC;
-                {% endif %}
-              {% endif %}
-            </a>
-          </th>
+  <!-- SAĞ BLOK -->
+  <div class="right-block">
 
-          <th>Güncelle</th>
-          <th>Sil</th>
-        </tr>
-      </thead>
+    <!-- Harcama ekleme formu -->
+    <form method="POST" class="mb-4">
+      {{ form.hidden_tag() }}
 
-      <tbody>
-        {% for expense in expenses %}
-        <tr>
-          <td data-label="Gider Miktarı">{{ expense.amount }} ₺</td>
-          <td data-label="Gider Tarihi">{{ expense.date.strftime('%d/%m/%Y') }}</td>
-          <td data-label="Gider Kategorisi">{{ expense.expense_category.name }}</td>
-          <td data-label="Güncelle">
-            <a href="{{ url_for('edit_expense', id=expense.id) }}">
-              <button type="button" class="btn btn-info mt-1">Güncelle</button>
-            </a>
-          </td>
-          <td data-label="Sil">
-            <!-- Sil butonu modal açacak -->
-            <button type="button" class="btn btn-danger mt-1" data-toggle="modal" data-target="#deleteModal{{ expense.id }}">
-              Sil
-            </button>
+      <div class="form-group">
+        {{ form.amount.label(class="form-label") }}
+        {{ form.amount(class="form-control", id="amount") }}
+        {% for error in form.amount.errors %}
+        <small class="text-danger">{{ error }}</small>
+        {% endfor %}
+      </div>
 
-            <!-- Modal -->
-            <div
-              class="modal fade"
-              id="deleteModal{{ expense.id }}"
-              tabindex="-1"
-              role="dialog"
-              aria-labelledby="deleteModalLabel{{ expense.id }}"
-              aria-hidden="true"
-            >
-              <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                  <form action="{{ url_for('delete_expense', id=expense.id) }}" method="POST">
-                    {{ form.csrf_token }}
-                    <div class="modal-header">
-                      <h5 class="modal-title" id="deleteModalLabel{{ expense.id }}">Gider Silme Onayı</h5>
-                      <button type="button" class="close" data-dismiss="modal" aria-label="Kapat">
-                        <span aria-hidden="true">&times;</span>
-                      </button>
-                    </div>
-                    <div class="modal-body">
-                      <p>{{ expense.amount }} ₺ tutarındaki gideri silmek istediğinize emin misiniz?</p>
-                    </div>
-                    <div class="modal-footer">
-                      <button type="button" class="btn btn-secondary" data-dismiss="modal">İptal</button>
-                      <button type="submit" class="btn btn-danger">Evet, Sil</button>
-                    </div>
-                  </form>
+      <div class="form-group">
+        {{ form.category.label(class="form-label") }}
+        {{ form.category(class="form-control", id="category") }}
+        {% for error in form.category.errors %}
+        <small class="text-danger">{{ error }}</small>
+        {% endfor %}
+      </div>
+
+      <div class="form-group">
+        {{ form.date.label(class="form-label") }}
+        {{ form.date(class="form-control", id="date") }}
+        {% for error in form.date.errors %}
+        <small class="text-danger">{{ error }}</small>
+        {% endfor %}
+      </div>
+
+      <button type="submit" class="btn btn-primary mt-3">Harcama Ekle</button>
+    </form>
+
+    <!-- Giderler Tablosu -->
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Gider Miktarı</th>
+            <th>Gider Tarihi</th>
+            <th>Gider Kategorisi</th>
+            <th>Güncelle</th>
+            <th>Sil</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for expense in expenses %}
+          <tr>
+            <td data-label="Gider Miktarı">{{ expense.amount }} ₺</td>
+            <td data-label="Gider Tarihi">{{ expense.date.strftime('%d/%m/%Y') }}</td>
+            <td data-label="Gider Kategorisi">{{ expense.expense_category.name }}</td>
+            <td data-label="Güncelle">
+              <a href="{{ url_for('edit_expense', id=expense.id) }}">
+                <button type="button" class="btn btn-info btn-sm">Güncelle</button>
+              </a>
+            </td>
+            <td data-label="Sil">
+              <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#deleteModal{{ expense.id }}">
+                Sil
+              </button>
+              <!-- Modal -->
+              <div class="modal fade" id="deleteModal{{ expense.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                  <div class="modal-content">
+                    <form action="{{ url_for('delete_expense', id=expense.id) }}" method="POST">
+                      {{ form.csrf_token }}
+                      <div class="modal-header">
+                        <h5 class="modal-title">Gider Silme Onayı</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Kapat">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <div class="modal-body">
+                        <p>{{ expense.amount }} ₺ tutarındaki gideri silmek istediğinize emin misiniz?</p>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">İptal</button>
+                        <button type="submit" class="btn btn-danger">Evet, Sil</button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               </div>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-        {% if expenses %}
-        <tr style="background-color:#696969; color: white;"><td colspan ="5">Toplam Gideriniz : {{sum_expenses}} ₺</td></tr>
-        {% else %}
-        <tr><td colspan ="5">Henüz gider bilgisi girmemişsiniz.</td></tr>
-        {% endif %}
-      </tbody>
-    </table>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if expenses %}
+          <tr style="background-color:#696969; color: white;">
+            <td colspan="5">Toplam Gideriniz : {{ sum_expenses }} ₺</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5">Aradığınız kriterlerde bir gider bilgisi bulunamadı.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
   </div>
 </div>
 

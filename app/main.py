@@ -4,7 +4,7 @@ from wtforms import Form,StringField,TextAreaField,PasswordField,validators,Vali
 from passlib.hash import sha256_crypt
 from functools import wraps
 from flask_wtf import FlaskForm
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, or_
 from flask_wtf.csrf import generate_csrf
 from datetime import datetime, timedelta
 
@@ -331,60 +331,142 @@ def delete_income(id):
     return redirect(url_for("income"))
     
 
-# Harcama ekleme
-@app.route("/expense",methods=["GET","POST"])
+#Harcama Ekleme
+from sqlalchemy import or_, and_
+from datetime import datetime, timedelta
+
+@app.route("/expense", methods=["GET", "POST"])
 @login_required
 def expense():
-    form=ExpenseForm(request.form)
+    form = ExpenseForm(request.form)
 
-    categories=Expense_Category.query.all()
-    form.category.choices = [(c.id , c.name) for c in categories]
-    
-    if request.method=="POST" and form.validate():
-        new_expense=Expense(
+    categories = Expense_Category.query.all()
+    form.category.choices = [(c.id, c.name) for c in categories]
+
+    if request.method == "POST" and form.validate():
+        new_expense = Expense(
             category_id=form.category.data,
             amount=form.amount.data,
             date=form.date.data,
-            user_id=session["user_id"])
+            user_id=session["user_id"]
+        )
         db.session.add(new_expense)
         db.session.commit()
-        flash("Harcamanız başarıyla kaydedildi.","success")
+        flash("Harcamanız başarıyla kaydedildi.", "success")
         return redirect(url_for("expense"))
-    expenses = []
-    sum_expenses = db.session.query(func.sum(Expense.amount)).filter_by(user_id=session["user_id"]).scalar()
-    order_category = request.args.get("order_category","asc")
-    order_date = request.args.get("order_date","asc")
-    order_amount = request.args.get("order_amount","asc")
 
-    # Kategori sıralama
-    if "order_category" in request.args:
-        if order_category =="desc":
-            expenses = Expense.query.join(Expense_Category).filter(Expense.user_id == session["user_id"]).order_by(Expense_Category.name.desc()).all()
+    # Filtreleme için gelen parametreler
+    selected_categories = request.args.getlist("categories[]")
+    selected_dates = request.args.getlist("dates[]")
+    selected_amounts = request.args.getlist("amounts[]")
+    order_by = request.args.get("order_by", "date_desc")
+    selected_order = order_by
 
+    # Base query, sadece user bazlı
+    query = Expense.query.filter(Expense.user_id == session["user_id"])
+
+    # Filtreleme fonksiyonları
+    def parse_amount_range(r):
+        min_val, max_val = r.split("-")
+        max_val = float(max_val) if max_val != "inf" else None
+        return float(min_val), max_val
+
+    def parse_date_range(r):
+        now = datetime.utcnow().date()
+        if r == "1_week":
+            start_date = now - timedelta(days=7)
+            end_date = now
+        elif r == "1_month":
+            start_date = now - timedelta(days=30)
+            end_date = now
+        elif r == "3_month":
+            start_date = now - timedelta(days=90)
+            end_date = now
+        elif r == "6_month":
+            start_date = now - timedelta(days=180)
+            end_date = now
+        elif r == "1_year":
+            start_date = now - timedelta(days=365)
+            end_date = now
+        elif r == "5_year":
+            start_date = now - timedelta(days=5*365)
+            end_date = now
         else:
-            expenses = Expense.query.join(Expense_Category).filter(Expense.user_id == session["user_id"]).order_by(Expense_Category.name.asc()).all()
+            start_date = None
+            end_date = None
+        return start_date, end_date
 
-    # Tarihe göre sıralama     
-    elif "order_date" in request.args:
-        if order_date =="desc":
-            expenses = Expense.query.filter_by(user_id=session["user_id"]).order_by(Expense.date.desc()).all()
+    # Kategori filtresi
+    if selected_categories:
+        query = query.filter(Expense.category_id.in_(selected_categories))
 
-        else:
-            expenses = Expense.query.filter_by(user_id=session["user_id"]).order_by(Expense.date.asc()).all()
+    # Tutar aralığı filtresi
+    if selected_amounts:
+        amount_filters = []
+        for r in selected_amounts:
+            min_val, max_val = parse_amount_range(r)
+            if max_val is None:
+                amount_filters.append(Expense.amount >= min_val)
+            else:
+                amount_filters.append(and_(Expense.amount >= min_val, Expense.amount <= max_val))
+        query = query.filter(or_(*amount_filters))
 
-    # Miktara göre sıralama
-    elif "order_amount" in request.args:
-        if order_amount =="desc":
-            expenses = Expense.query.filter_by(user_id=session["user_id"]).order_by(Expense.amount.desc()).all()
+    # Tarih aralığı filtresi
+    if selected_dates:
+        date_filters = []
+        for r in selected_dates:
+            start_date, end_date = parse_date_range(r)
+            if start_date and end_date:
+                date_filters.append(and_(Expense.date >= start_date, Expense.date <= end_date))
+        if date_filters:
+            query = query.filter(or_(*date_filters))
 
-        else:
-            expenses = Expense.query.filter_by(user_id=session["user_id"]).order_by(Expense.amount.asc()).all()
+    # Toplam harcama
+    sum_expenses = query.with_entities(func.sum(Expense.amount)).scalar() or 0
 
-    else:
-        expenses = Expense.query.filter_by(user_id=session["user_id"]).order_by(Expense.date.desc()).all()
+    # Sıralama
+    if order_by == "amount_desc":
+        query = query.order_by(Expense.amount.desc())
+    elif order_by == "amount_asc":
+        query = query.order_by(Expense.amount.asc())
+    elif order_by == "date_desc":
+        query = query.order_by(Expense.date.desc())
+    elif order_by == "date_asc":
+        query = query.order_by(Expense.date.asc())
+    elif order_by == "category_desc":
+        query = query.join(Expense_Category).order_by(Expense_Category.name.desc())
+    elif order_by == "category_asc":
+        query = query.join(Expense_Category).order_by(Expense_Category.name.asc())
 
-    
-    return render_template ("expense.html",form=form, order_amount = order_amount, order_category = order_category, order_date = order_date, expenses = expenses, sum_expenses = sum_expenses)
+    expenses = query.all()
+
+    amount_ranges = {
+        "0 - 10.000 ₺": "0-10000",
+        "10.001 - 50.000 ₺": "10001-50000",
+        "50.001 - 250.000 ₺": "50001-250000",
+        "250.001 ₺ ve üzeri": "250001-inf"
+    }
+
+    date_ranges = {
+        "Son 1 Hafta": "1_week",
+        "Son 1 Ay": "1_month",
+        "Son 3 Ay": "3_month",
+        "Son 6 Ay": "6_month",
+        "Son 1 Yıl": "1_year",
+        "Son 5 Yıl": "5_year"
+    }
+
+    return render_template("expense.html",  categories=categories,
+                           amount_ranges=amount_ranges,
+                           date_ranges=date_ranges,
+                           form=form,
+                           selected_order=selected_order,
+                           expenses=expenses,
+                           sum_expenses=sum_expenses,
+                           selected_categories=selected_categories,
+                           selected_amounts=selected_amounts,
+                           selected_dates=selected_dates)
+
 
 # Harcama Düzenleme
 @app.route("/edit_expense<int:id>", methods = ["GET","POST"])
@@ -446,7 +528,7 @@ def dashboard():
     elif selected_range =="5_year" : 
         start_date = now - timedelta(days=5*365)  
     else:
-        start_date = None      
+        start_date = None    
     
     #Tarih filtreleme
     if start_date:

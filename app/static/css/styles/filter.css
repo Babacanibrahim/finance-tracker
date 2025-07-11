@@ -1,0 +1,55 @@
+.filter-panel {
+    background-color: #5291cf;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+    width: 260px;
+    max-height: calc(100vh - 100px);
+    /* Maksimum yükseklik */
+    overflow-y: auto;
+    /* Dikey scroll */
+    position: sticky;
+    top: 20px;
+}
+
+.filter-panel h5 {
+    font-size: 20px;
+    font-weight: bold;
+    margin-top: 20px;
+    color: #343a40;
+    border-left: 4px solid #007bff;
+    padding-left: 8px;
+    margin-bottom: 10px;
+}
+
+.filter-panel .form-check {
+    margin-bottom: 8px;
+}
+
+.filter-panel .form-check-input {
+    cursor: pointer;
+}
+
+.filter-panel .form-check-label {
+    margin-left: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    color: #333;
+}
+
+.filter-panel .form-check-input:checked {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.filter-panel select {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.filter-panel .btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    width: 100%;
+    margin-top: 15px;
+}
