@@ -260,40 +260,111 @@ def income():
         db.session.commit()
         flash("Gelir başarıyla eklendi","success")
         return redirect(url_for("income"))
-    sum_incomes = db.session.query(func.sum(Income.amount)).filter_by(user_id=session["user_id"]).scalar()
-    incomes = []
-    order_category = request.args.get("order_category","asc")
-    order_date = request.args.get("order_date","asc")
-    order_amount = request.args.get("order_amount","asc")
+    
+    # Filtreleme için gelen parametreler
+    selected_categories = request.args.getlist("categories[]")
+    selected_dates = request.args.getlist("dates[]")
+    selected_amounts = request.args.getlist("amounts[]")
+    order_by = request.args.get("order_by", "date_desc")
+    selected_order = order_by
 
-    # Kategori sıralama
-    if "order_category" in request.args:
-        if order_category =="desc":
-            incomes = Income.query.join(Income_Category).filter(Income.user_id == session["user_id"]).order_by(Income_Category.name.desc()).all()
+    #Base query, sadece user bazlı
+    query = Income.query.filter(Income.user_id ==session["user_id"])
 
+    #Filtreleme fonksiyonları
+
+    def parse_amount_range(r):
+        min_val , max_val = r.split("-")
+        max_val = float(max_val) if max_val!= "inf" else None
+        return float(min_val), max_val
+    
+    def parse_date_range(r):
+        now = datetime.utcnow().date()
+        if r == "1_week":
+            start_date = now - timedelta(days=7)
+            end_date = now
+        elif r == "1_month":
+            start_date = now - timedelta(days=30)
+            end_date = now
+        elif r == "3_month":
+            start_date = now - timedelta(days=90)
+            end_date = now
+        elif r == "6_month":
+            start_date = now - timedelta(days=180)
+            end_date = now
+        elif r == "1_year":
+            start_date = now - timedelta(days=365)
+            end_date = now
+        elif r == "5_year":
+            start_date = now - timedelta(days=5*365)
+            end_date = now
         else:
-            incomes = Income.query.join(Income_Category).filter(Income.user_id == session["user_id"]).order_by(Income_Category.name.asc()).all()
+            start_date = None
+            end_date = None
+        return start_date, end_date
+    
+    #Kategori filtresi
+    if selected_categories:
+        query = query.filter(Income.category_id.in_(selected_categories))
 
-    # Tarihe göre sıralama     
-    elif "order_date" in request.args:
-        if order_date =="desc":
-            incomes = Income.query.filter_by(user_id=session["user_id"]).order_by(Income.date.desc()).all()
+    # Tutar aralığı filtresi
+    if selected_amounts:
+        amount_filters = []
+        for r in selected_amounts:
+            min_val, max_val = parse_amount_range(r)
+            if max_val is None:
+                amount_filters.append(Income.amount >= min_val)
+            else:
+                amount_filters.append(and_(Income.amount >= min_val, Income.amount <= max_val))
+        query = query.filter(or_(*amount_filters))
 
-        else:
-            incomes = Income.query.filter_by(user_id=session["user_id"]).order_by(Income.date.asc()).all()
+    # Tarih aralığı filtresi
+    if selected_dates:
+        date_filters = []
+        for r in selected_dates:
+            start_date, end_date = parse_date_range(r)
+            if start_date and end_date:
+                date_filters.append(and_(Income.date >= start_date, Income.date <= end_date))
+        if date_filters:
+            query = query.filter(or_(*date_filters))
 
-    # Miktara göre sıralama
-    elif "order_amount" in request.args:
-        if order_amount =="desc":
-            incomes = Income.query.filter_by(user_id=session["user_id"]).order_by(Income.amount.desc()).all()
+    # Toplam harcama
+    sum_incomes = query.with_entities(func.sum(Income.amount)).scalar() or 0
 
-        else:
-            incomes = Income.query.filter_by(user_id=session["user_id"]).order_by(Income.amount.asc()).all()
+    #Sıralama
+    if order_by == "amount_desc":
+        query = query.order_by(Income.amount.desc())
+    elif order_by == "amount_asc":
+        query = query.order_by(Income.amount.asc())
+    elif order_by == "date_desc":
+        query = query.order_by(Income.date.desc())
+    elif order_by == "date_asc":
+        query = query.order_by(Income.date.asc())
+    elif order_by == "category_desc":
+        query = query.join(Income_Category).order_by(Income_Category.name.desc())
+    elif order_by == "category_asc":
+        query = query.join(Income_Category).order_by(Income_Category.name.asc())
 
-    else:
-        incomes = Income.query.filter_by(user_id=session["user_id"]).order_by(Income.date.desc()).all()
+    incomes = query.all()
 
-    return render_template ("income.html",form=form, incomes = incomes, order_date = order_date, order_amount = order_amount, order_category = order_category, sum_incomes = sum_incomes)
+    amount_ranges = {
+        "0 - 10.000 ₺": "0-10000",
+        "10.001 - 50.000 ₺": "10001-50000",
+        "50.001 - 250.000 ₺": "50001-250000",
+        "250.001 ₺ ve üzeri": "250001-inf"
+    }
+
+    date_ranges = {
+        "Son 1 Hafta": "1_week",
+        "Son 1 Ay": "1_month",
+        "Son 3 Ay": "3_month",
+        "Son 6 Ay": "6_month",
+        "Son 1 Yıl": "1_year",
+        "Son 5 Yıl": "5_year"
+    }
+
+    
+    return render_template ("income.html",incomes = incomes, selected_order = selected_order, date_ranges = date_ranges, amount_ranges = amount_ranges, categories = categories, form=form, sum_incomes = sum_incomes, selected_dates = selected_dates, selected_categories = selected_categories, selected_amounts = selected_amounts)
 
 # Gelir Düzenleme
 @app.route("/edit_income/<int:id>", methods = ["GET","POST"])
@@ -332,8 +403,6 @@ def delete_income(id):
     
 
 #Harcama Ekleme
-from sqlalchemy import or_, and_
-from datetime import datetime, timedelta
 
 @app.route("/expense", methods=["GET", "POST"])
 @login_required
