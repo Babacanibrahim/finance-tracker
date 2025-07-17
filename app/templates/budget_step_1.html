@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+{% block body %}
+<h2>1. Adım: Bütçe Tarihlerini Seç</h2>
+<form method="POST">
+  {{ form.hidden_tag() }}
+  <div class="form-group">
+    {{ form.start_date.label }} 
+    {{ form.start_date(class="form-control", id="start_date") }}
+    {% for err in form.start_date.errors %}
+      <small class="text-danger">{{ err }}</small>
+    {% endfor %}
+  </div>
+  <div class="form-group">
+    {{ form.end_date.label }} 
+    {{ form.end_date(class="form-control", id="end_date") }}
+    {% for err in form.end_date.errors %}
+      <small class="text-danger">{{ err }}</small>
+    {% endfor %}
+  </div>
+
+  <p>Seçilen süre: <span id="day_count">-</span> gün</p>
+
+  <button type="submit" class="btn btn-primary">İleri</button>
+</form>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const startDateInput = document.getElementById("start_date");
+  const endDateInput = document.getElementById("end_date");
+  const dayCountSpan = document.getElementById("day_count");
+
+  function updateDayCount() {
+    const start = new Date(startDateInput.value);
+    const end = new Date(endDateInput.value);
+
+    if (startDateInput.value && endDateInput.value && end >= start) {
+      const diffTime = end - start; // ms
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 dahil
+      dayCountSpan.textContent = diffDays;
+    } else {
+      dayCountSpan.textContent = "-";
+    }
+  }
+
+  function updateLimits() {
+    if (startDateInput.value) {
+      endDateInput.min = startDateInput.value;
+    } else {
+      endDateInput.min = "";
+    }
+    if (endDateInput.value) {
+      startDateInput.max = endDateInput.value;
+    } else {
+      startDateInput.max = "";
+    }
+  }
+
+  startDateInput.addEventListener("change", () => {
+    updateLimits();
+    updateDayCount();
+  });
+
+  endDateInput.addEventListener("change", () => {
+    updateLimits();
+    updateDayCount();
+  });
+
+  updateLimits();
+  updateDayCount();
+});
+</script>
+{% endblock %}

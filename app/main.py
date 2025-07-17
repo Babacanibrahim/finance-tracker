@@ -31,6 +31,25 @@ class User(db.Model):
     incomes = db.relationship('Income', backref='user', lazy=True)
     expenses = db.relationship('Expense', backref='user', lazy=True)
 
+# Harcama Kısıtı Tablosu DB için
+
+class Budget(db.Model):
+    __tablename__ = "budgets"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    items = db.relationship("BudgetItem", backref="budget", cascade="all, delete-orphan")
+
+class BudgetItem(db.Model):
+    __tablename__ = "budget_items"
+    id = db.Column(db.Integer, primary_key=True)
+    budget_id = db.Column(db.Integer, db.ForeignKey("budgets.id"), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey("expense_category.id"), nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+
+    category = db.relationship("Expense_Category")
+
 
 #Income Category Tablosu DB için
 class Income_Category(db.Model):
@@ -154,6 +173,25 @@ class IncomeForm(FlaskForm):
     category=SelectField("Gelir Kategorisi", coerce=int)
 
 
+#Limit kategorisi belirleme formu
+class BudgetStep2Form(FlaskForm):
+    category_1 = SelectField("Kategori 1", coerce=int, validators=[validators.Optional()])
+    amount_1 = DecimalField("Limit 1", validators=[validators.Optional()])
+    category_2 = SelectField("Kategori 2", coerce=int, validators=[validators.Optional()])
+    amount_2 = DecimalField("Limit 2", validators=[validators.Optional()])
+    category_3 = SelectField("Kategori 3", coerce=int, validators=[validators.Optional()])
+    amount_3 = DecimalField("Limit 3", validators=[validators.Optional()])
+    category_4 = SelectField("Kategori 4", coerce=int, validators=[validators.Optional()])
+    amount_4 = DecimalField("Limit 4", validators=[validators.Optional()])
+    category_5 = SelectField("Kategori 5", coerce=int, validators=[validators.Optional()])
+    amount_5 = DecimalField("Limit 5", validators=[validators.Optional()])
+
+# Tarih Belirleme Formu
+class BudgetStep1Form(FlaskForm):
+    start_date = DateField("Başlangıç Tarihi", format="%Y-%m-%d", validators=[validators.DataRequired()])
+    end_date = DateField("Bitiş Tarihi", format="%Y-%m-%d", validators=[validators.DataRequired()])
+
+
 # Yönlendirmeler
 @app.route("/")
 def index():
@@ -175,6 +213,78 @@ def inject_user():
         user = User.query.filter_by(id=session["user_id"]).first()
         return dict(user = user)
     return dict(user=None)
+
+#Limit seçme adımları
+@app.route("/budget_step_1", methods=["GET", "POST"])
+@login_required
+def budget_step_1():
+    form = BudgetStep1Form()
+    if form.validate_on_submit():
+        session["budget_start_date"] = form.start_date.data.isoformat()
+        session["budget_end_date"] = form.end_date.data.isoformat()
+        return redirect(url_for("budget_step_2"))
+    return render_template("budget_step_1.html", form=form)
+
+
+# Limit Bütçe Belirleme Adımı
+@app.route("/budget_step_2", methods=["GET", "POST"])
+@login_required
+def budget_step_2():
+    categories = Expense_Category.query.all()
+    form = BudgetStep2Form()
+    choices = [(-1, "--- Seçiniz ---")] + [(c.id, c.name) for c in categories]
+    
+    for i in range(1,6):
+        getattr(form, f"category_{i}").choices = choices
+    
+    if "budget_start_date" not in session or "budget_end_date" not in session:
+        flash("Önce tarihleri seçmelisiniz.", "warning")
+        return redirect(url_for("budget_step_1"))
+    
+    if form.validate_on_submit():
+        from datetime import datetime
+        start_date = datetime.fromisoformat(session["budget_start_date"]).date()
+        end_date = datetime.fromisoformat(session["budget_end_date"]).date()
+
+        budget = Budget(
+            user_id=session["user_id"],
+            start_date=start_date,
+            end_date=end_date
+        )
+        db.session.add(budget)
+        db.session.flush()
+        
+        for i in range(1,6):
+            cat_id = getattr(form, f"category_{i}").data
+            amt = getattr(form, f"amount_{i}").data
+            if cat_id != -1 and amt:
+                item = BudgetItem(budget_id=budget.id, category_id=cat_id, amount=amt)
+                db.session.add(item)
+        
+        db.session.commit()
+
+        session.pop("budget_start_date", None)
+        session.pop("budget_end_date", None)
+
+        flash("Bütçe başarıyla oluşturuldu!", "success")
+        return redirect(url_for("show_budgets"))
+
+    return render_template("budget_step_2.html", form=form)
+
+
+# Limit Düzenleme
+@app.route("/edit_limit/<int:id>" , methods = ["GET", "POST"])
+@login_required
+def edit_limit(id):
+    return render_template("edit_limit.html")
+
+# Limit Detay
+@app.route("/view_limit/<int:id>" , methods = ["GET"])
+@login_required
+def view_limit(id):
+
+    return render_template("view_limit.html")
+
 
 # Mevcut Şifreyi Doğrulama
 @app.route("/repassword", methods=["GET", "POST"])

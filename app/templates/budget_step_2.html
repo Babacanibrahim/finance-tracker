@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% block body %}
+<h2>2. Adım: Kategori ve Limitleri Gir</h2>
+<form method="POST">
+  {{ form.hidden_tag() }}
+  {% for i in range(1,6) %}
+  <div class="form-row">
+    <div class="form-group col-md-6">
+      {{ form["category_" ~ i].label }} 
+      {{ form["category_" ~ i](class="form-control") }}
+    </div>
+    <div class="form-group col-md-6">
+      {{ form["amount_" ~ i].label }} 
+      {{ form["amount_" ~ i](class="form-control") }}
+    </div>
+  </div>
+{% endfor %}
+  <button type="submit" class="btn btn-success">Kaydet</button>
+</form>
+{% endblock %}
