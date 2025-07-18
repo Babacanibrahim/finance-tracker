@@ -1,13 +1,33 @@
 {% extends "layout.html" %}
 
 {% block head %}
-
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles/tables.css') }}">
 {% endblock head %}
 
-{% block title %}
-
-{% endblock title %}
-
 {% block body %}
-{{limit.start_date}}
-{% endblock body %}
+<h2>Bütçe Limitleri</h2>
+<p>Bütçe Tarihleri: {{ budget.start_date }} - {{ budget.end_date }}</p>
+
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>Kategori</th>
+      <th>Limit</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in budget.items %}
+      <tr>
+        <td>
+          {% if item.custom_category %}
+            {{ item.custom_category }} (Özel Kategori)
+          {% else %}
+            {{ item.category.name }}
+          {% endif %}
+        </td>
+        <td>{{ item.amount }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

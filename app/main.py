@@ -45,7 +45,8 @@ class BudgetItem(db.Model):
     __tablename__ = "budget_items"
     id = db.Column(db.Integer, primary_key=True)
     budget_id = db.Column(db.Integer, db.ForeignKey("budgets.id"), nullable=False)
-    category_id = db.Column(db.Integer, db.ForeignKey("expense_category.id"), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey("expense_category.id"), nullable=True)
+    custom_category = db.Column(db.String, nullable=True)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
 
     category = db.relationship("Expense_Category")
@@ -175,16 +176,8 @@ class IncomeForm(FlaskForm):
 
 #Limit kategorisi belirleme formu
 class BudgetStep2Form(FlaskForm):
-    category_1 = SelectField("Kategori 1", coerce=int, validators=[validators.Optional()])
-    amount_1 = DecimalField("Limit 1", validators=[validators.Optional()])
-    category_2 = SelectField("Kategori 2", coerce=int, validators=[validators.Optional()])
-    amount_2 = DecimalField("Limit 2", validators=[validators.Optional()])
-    category_3 = SelectField("Kategori 3", coerce=int, validators=[validators.Optional()])
-    amount_3 = DecimalField("Limit 3", validators=[validators.Optional()])
-    category_4 = SelectField("Kategori 4", coerce=int, validators=[validators.Optional()])
-    amount_4 = DecimalField("Limit 4", validators=[validators.Optional()])
-    category_5 = SelectField("Kategori 5", coerce=int, validators=[validators.Optional()])
-    amount_5 = DecimalField("Limit 5", validators=[validators.Optional()])
+    other_category_name = StringField("Diğer Kategori Adı", validators=[validators.Optional()])
+    other_amount = DecimalField("Diğer Kategori Limiti", validators=[validators.Optional()])
 
 # Tarih Belirleme Formu
 class BudgetStep1Form(FlaskForm):
@@ -232,45 +225,67 @@ def budget_step_1():
 def budget_step_2():
     categories = Expense_Category.query.all()
     form = BudgetStep2Form()
-    choices = [(-1, "--- Seçiniz ---")] + [(c.id, c.name) for c in categories]
-    
-    for i in range(1,6):
-        getattr(form, f"category_{i}").choices = choices
-    
+
     if "budget_start_date" not in session or "budget_end_date" not in session:
         flash("Önce tarihleri seçmelisiniz.", "warning")
         return redirect(url_for("budget_step_1"))
-    
-    if form.validate_on_submit():
+
+    if request.method == "POST" and form.validate():
         from datetime import datetime
         start_date = datetime.fromisoformat(session["budget_start_date"]).date()
         end_date = datetime.fromisoformat(session["budget_end_date"]).date()
 
-        budget = Budget(
-            user_id=session["user_id"],
-            start_date=start_date,
-            end_date=end_date
-        )
+        budget = Budget(user_id=session["user_id"], start_date=start_date, end_date=end_date)
         db.session.add(budget)
-        db.session.flush()
-        
-        for i in range(1,6):
-            cat_id = getattr(form, f"category_{i}").data
-            amt = getattr(form, f"amount_{i}").data
-            if cat_id != -1 and amt:
-                item = BudgetItem(budget_id=budget.id, category_id=cat_id, amount=amt)
-                db.session.add(item)
-        
-        db.session.commit()
+        db.session.flush()  # budget.id almak için
 
+        # 🔷 Kategori bazlı limitler
+        for category in categories:
+            amount_str = request.form.get(f"amount_{category.id}")
+            if amount_str:
+                try:
+                    amount = float(amount_str)
+                    item = BudgetItem(
+                        budget_id=budget.id,
+                        category_id=category.id,
+                        amount=amount
+                    )
+                    db.session.add(item)
+                except ValueError:
+                    continue  # Sayıya çevrilemeyenleri atla
+
+        # 🟦 Yeni: Birden fazla özel kategori (custom_category[] + custom_amount[])
+        custom_categories = request.form.getlist("custom_category[]")
+        custom_amounts = request.form.getlist("custom_amount[]")
+
+        for name, amount_str in zip(custom_categories, custom_amounts):
+            if name and amount_str:
+                try:
+                    amount = float(amount_str)
+                    item = BudgetItem(
+                        budget_id=budget.id,
+                        custom_category=name.strip(),
+                        amount=amount
+                    )
+                    db.session.add(item)
+                except ValueError:
+                    continue
+
+        db.session.commit()
+        id = item.budget_id
         session.pop("budget_start_date", None)
         session.pop("budget_end_date", None)
-
         flash("Bütçe başarıyla oluşturuldu!", "success")
-        return redirect(url_for("show_budgets"))
+        return redirect(url_for("view_limit", id = id ))
 
-    return render_template("budget_step_2.html", form=form)
+    return render_template("budget_step_2.html", form=form, categories=categories )
 
+# Tüm Limtileri Gösterme
+@app.route("/budgets", methods = ["GET"])
+@login_required
+def budgets():
+    budgets = Budget.query.filter_by(user_id = session["user_id"]).all()
+    return render_template("budgets.html" , budgets = budgets)
 
 # Limit Düzenleme
 @app.route("/edit_limit/<int:id>" , methods = ["GET", "POST"])
@@ -278,12 +293,28 @@ def budget_step_2():
 def edit_limit(id):
     return render_template("edit_limit.html")
 
+#Limit Silme
+@app.route("/delete/<int:id>", methods = ["POST"])
+@login_required
+def delete_budget(id):
+    budget = Budget.query.filter_by(id = id , user_id = session["user_id"]).first()
+    db.session.delete(budget)
+    db.session.commit()
+    flash("Bütçe Limit Başarılı Şekilde Silindi","success")
+    return redirect(url_for("budgets"))
+
+
 # Limit Detay
 @app.route("/view_limit/<int:id>" , methods = ["GET"])
 @login_required
 def view_limit(id):
+    budget = Budget.query.filter_by(id = id , user_id = session["user_id"]).first()
+    if not budget :
+        flash("Bütçe bulunamadı veya yetkiniz yok","warning")
+        return redirect(url_for("budget_step_1"))
+    
 
-    return render_template("view_limit.html")
+    return render_template("view_limit.html" , budget = budget)
 
 
 # Mevcut Şifreyi Doğrulama
