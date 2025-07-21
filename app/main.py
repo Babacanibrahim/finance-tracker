@@ -62,9 +62,11 @@ class Income_Category(db.Model):
 #Expense Category Tablosu DB için
 class Expense_Category(db.Model):
     __tablename__ = "expense_category"
-    id=db.Column(db.Integer,primary_key=True)
-    name=db.Column(db.String,nullable=False,unique=True)
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)  # 🔸 yeni satır
     expenses = db.relationship('Expense', backref='expense_category', lazy=True)
+
 
 # Income Tablosu DB için
 class Income(db.Model):
@@ -223,7 +225,9 @@ def budget_step_1():
 @app.route("/budget_step_2", methods=["GET", "POST"])
 @login_required
 def budget_step_2():
-    categories = Expense_Category.query.all()
+    categories = Expense_Category.query.filter(
+        or_(Expense_Category.user_id == session["user_id"], Expense_Category.user_id == None)
+    ).all()
     form = BudgetStep2Form()
 
     if "budget_start_date" not in session or "budget_end_date" not in session:
@@ -239,7 +243,7 @@ def budget_step_2():
         db.session.add(budget)
         db.session.flush()  # budget.id almak için
 
-        # 🔷 Kategori bazlı limitler
+        # Var olan kategoriler için miktar kaydı
         for category in categories:
             amount_str = request.form.get(f"amount_{category.id}")
             if amount_str:
@@ -248,13 +252,14 @@ def budget_step_2():
                     item = BudgetItem(
                         budget_id=budget.id,
                         category_id=category.id,
-                        amount=amount
+                        amount=amount,
+                        custom_category=None
                     )
                     db.session.add(item)
                 except ValueError:
-                    continue  # Sayıya çevrilemeyenleri atla
+                    continue
 
-        # 🟦 Yeni: Birden fazla özel kategori (custom_category[] + custom_amount[])
+        # Özel kategoriler için
         custom_categories = request.form.getlist("custom_category[]")
         custom_amounts = request.form.getlist("custom_amount[]")
 
@@ -262,23 +267,39 @@ def budget_step_2():
             if name and amount_str:
                 try:
                     amount = float(amount_str)
+                    custom_name = name.strip()
+
+                    # Aynı isimde kullanıcıya ait kategori var mı kontrol et
+                    existing_cat = Expense_Category.query.filter_by(name=custom_name, user_id=session["user_id"]).first()
+
+                    if not existing_cat:
+                        new_cat = Expense_Category(name=custom_name, user_id=session["user_id"])
+                        db.session.add(new_cat)
+                        db.session.flush()  # id almak için
+                        category_id = new_cat.id
+                    else:
+                        category_id = existing_cat.id
+
+                    # BudgetItem kaydı
                     item = BudgetItem(
                         budget_id=budget.id,
-                        custom_category=name.strip(),
-                        amount=amount
+                        category_id=category_id,
+                        amount=amount,
+                        custom_category=None  # artık kullanılmıyor
                     )
                     db.session.add(item)
                 except ValueError:
                     continue
 
         db.session.commit()
-        id = item.budget_id
+        id = budget.id
         session.pop("budget_start_date", None)
         session.pop("budget_end_date", None)
         flash("Bütçe başarıyla oluşturuldu!", "success")
-        return redirect(url_for("view_limit", id = id ))
+        return redirect(url_for("view_limit", id=id))
 
-    return render_template("budget_step_2.html", form=form, categories=categories )
+    return render_template("budget_step_2.html", form=form, categories=categories)
+
 
 # Tüm Limtileri Gösterme
 @app.route("/budgets", methods = ["GET"])
@@ -305,16 +326,31 @@ def delete_budget(id):
 
 
 # Limit Detay
-@app.route("/view_limit/<int:id>" , methods = ["GET"])
+@app.route("/view_limit/<int:id>", methods=["GET"])
 @login_required
 def view_limit(id):
-    budget = Budget.query.filter_by(id = id , user_id = session["user_id"]).first()
-    if not budget :
-        flash("Bütçe bulunamadı veya yetkiniz yok","warning")
+    budget = Budget.query.filter_by(id=id, user_id=session["user_id"]).first()
+    if not budget:
+        flash("Bütçe bulunamadı veya yetkiniz yok", "warning")
         return redirect(url_for("budget_step_1"))
-    
 
-    return render_template("view_limit.html" , budget = budget)
+    budget_items = budget.items
+    expenses = {}
+
+    for item in budget_items:
+        if item.category_id:
+            total_spent = db.session.query(func.coalesce(func.sum(Expense.amount), 0)).filter(
+                Expense.user_id == session["user_id"],
+                Expense.category_id == item.category_id,
+                Expense.date >= budget.start_date,
+                Expense.date <= budget.end_date
+            ).scalar()
+
+            expenses[item.id] = total_spent
+        elif item.custom_category:
+            expenses[item.id] = None
+
+    return render_template("view_limit.html", budget=budget, expenses=expenses)
 
 
 # Mevcut Şifreyi Doğrulama
@@ -550,7 +586,10 @@ def delete_income(id):
 def expense():
     form = ExpenseForm(request.form)
 
-    categories = Expense_Category.query.all()
+    categories = Expense_Category.query.filter(
+        or_(Expense_Category.user_id == session["user_id"], Expense_Category.user_id == None)
+    ).all()
+
     form.category.choices = [(c.id, c.name) for c in categories]
 
     if request.method == "POST" and form.validate():
@@ -644,9 +683,13 @@ def expense():
     elif order_by == "date_asc":
         query = query.order_by(Expense.date.asc())
     elif order_by == "category_desc":
-        query = query.join(Expense_Category).order_by(Expense_Category.name.desc())
+        query = query.join(Expense_Category).filter(
+            or_(Expense_Category.user_id == session["user_id"], Expense_Category.user_id == None)
+        ).order_by(Expense_Category.name.desc())
     elif order_by == "category_asc":
-        query = query.join(Expense_Category).order_by(Expense_Category.name.asc())
+        query = query.join(Expense_Category).filter(
+            or_(Expense_Category.user_id == session["user_id"], Expense_Category.user_id == None)
+        ).order_by(Expense_Category.name.asc())
 
     expenses = query.all()
 
@@ -679,19 +722,23 @@ def expense():
 
 
 # Harcama Düzenleme
-@app.route("/edit_expense<int:id>", methods = ["GET","POST"])
+@app.route("/edit_expense<int:id>", methods=["GET","POST"])
 @login_required
 def edit_expense(id):
-    expense = Expense.query.get(id)
+    expense = Expense.query.filter_by(id=id, user_id=session["user_id"]).first_or_404()
+
+    categories = Expense_Category.query.filter(
+        or_(Expense_Category.user_id == session["user_id"], Expense_Category.user_id == None)
+    ).all()
+
     form = ExpenseForm()
-    categories = Expense_Category.query.all()
-    form.category.choices= [(c.id, c.name) for c in categories]
+    form.category.choices = [(c.id, c.name) for c in categories]
 
     if request.method == "GET":
         form.amount.data = expense.amount
         form.category.data = expense.category_id
         form.date.data = expense.date
-        return render_template("edit_expense.html", form = form, expense = expense)
+        return render_template("edit_expense.html", form=form, expense=expense)
 
     elif form.validate_on_submit():
         expense.amount = form.amount.data
@@ -700,8 +747,8 @@ def edit_expense(id):
         db.session.commit()
         return redirect(url_for("expense"))
     else:
-        flash("BİR HATA OLUŞTU.","danger")
-    return render_template("edit_expense.html", form = form, expense = expense)
+        flash("BİR HATA OLUŞTU.", "danger")
+    return render_template("edit_expense.html", form=form, expense=expense)
 
 # Harcama Silme
 @app.route("/delete_expense/<int:id>", methods=["POST"])
@@ -810,11 +857,15 @@ def dashboard():
 
     # GİDER KATEGORİ TOPLAMI
     expense_category_totals_query = db.session.query(
-        Expense_Category.name,
-        func.sum(Expense.amount)
-    ).join(Expense, Expense.category_id == Expense_Category.id).filter(
-        Expense.user_id == session["user_id"]
+    Expense_Category.name,
+    func.sum(Expense.amount)
+).join(Expense, Expense.category_id == Expense_Category.id).filter(
+    Expense.user_id == session["user_id"],
+    or_(
+        Expense_Category.user_id == session["user_id"],
+        Expense_Category.user_id == None
     )
+)
     if start_date:
         expense_category_totals_query = expense_category_totals_query.filter(Expense.date >= start_date)
 
