@@ -13,19 +13,61 @@
     <tr>
       <th>Kategori</th>
       <th>Limit</th>
+      <th>Toplam Harcama</th>
+      <th>Durum</th>
     </tr>
   </thead>
   <tbody>
     {% for item in budget.items %}
+      {% set data = expenses[item.id] %}
       <tr>
-        <td>
+        <td><strong>
           {% if item.custom_category %}
             {{ item.custom_category }} (Özel Kategori)
           {% else %}
             {{ item.category.name }}
           {% endif %}
+        </strong></td>
+
+        <td>{{ data.limit }} ₺</td>
+
+        <td>
+          {% if data.spent is not none %}
+            {{ data.spent }} ₺
+          {% else %}
+            -
+          {% endif %}
         </td>
-        <td>{{ item.amount }}</td>
+
+<td>
+  {% if data.percent is not none %}
+    {{ data.percent }}%
+    <div class="progress mt-1" style="height: 16px;">
+      <div class="progress-bar
+                  progress-bar-striped
+                  {% if data.percent >= 99 %}
+                    bg-danger
+                  {% elif data.percent >= 75 %}
+                    bg-warning
+                  {% elif data.percent >= 50 %}
+                    bg-info
+                  {% elif data.percent >= 25 %}
+                    bg-primary
+                  {% else %}
+                    bg-success
+                  {% endif %}"
+           role="progressbar"
+           style="width: {{ data.percent }}%;"
+           aria-valuenow="{{ data.percent }}"
+           aria-valuemin="0"
+           aria-valuemax="100">
+      </div>
+    </div>
+  {% else %}
+    -
+  {% endif %}
+</td>
+
       </tr>
     {% endfor %}
   </tbody>

@@ -346,9 +346,20 @@ def view_limit(id):
                 Expense.date <= budget.end_date
             ).scalar()
 
-            expenses[item.id] = total_spent
+            percent = float(total_spent) / float(item.amount) * 100 if item.amount > 0 else 0
+
+            expenses[item.id] = {
+                "spent": float(total_spent),
+                "limit": float(item.amount),
+                "percent": round(percent, 2)
+            }
+
         elif item.custom_category:
-            expenses[item.id] = None
+            expenses[item.id] = {
+                "spent": None,
+                "limit": float(item.amount),
+                "percent": None
+            }
 
     return render_template("view_limit.html", budget=budget, expenses=expenses)
 
