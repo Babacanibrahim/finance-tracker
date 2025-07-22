@@ -2,20 +2,38 @@
 
 {% block body %}
 
-<h2>Hakkımızda</h2>
-<hr><hr>
-<div>
-<h5>Ben Pamukkale Üniversitesi bilgisayar mühendisliği 3. sınıf öğrencisiyim. Portföyümü geliştirmek için geliştirdiğim uygulamayı deneyin. Aşağıdaki iletişim kanallarından bana ulaşabilirsiniz.  </h5>
-<br>
-<h6>E posta : <a href="mailto:babacan-1907@outlook.com.tr">babacan-1907@outlook.com.tr</a></h6>
-<br>
-<h6>Tel : +90 553 316 23 52</h6>
-<br>
-<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Octicons-mark-github.svg/1200px-Octicons-mark-github.svg.png?20180806170715" width="30" alt="">
-<a href="https://github.com/Babacanibrahim" target="_blank" style="font-size : 30px;">Github</a>
-<br><br>
-<img src="https://content.linkedin.com/content/dam/me/business/en-us/amp/xbu/linkedin-revised-brand-guidelines/home/fg/brand-homepg-guidance-linkedin-logo-dsk-v01.jpg.original.jpg" width="30" alt="">
-<a href="https://www.linkedin.com/in/ibrahim-babacan-7842b826a/" target="_blank" style="font-size : 30px;">Linkedin</a>
-</div>
-{% endblock body %}
+<div class="container mt-5">
+  <h2 class="text-center">Hakkımda</h2>
+  <hr style="border: none; height: 4px; background-color: #4054aeff; margin: 20px 0; border-radius: 2px;">
 
+  <div class="card p-4 shadow-sm" style="border-radius: 12px;">
+    <p style="font-size: 1.1rem;">
+      Merhaba! Ben <strong>İbrahim Babacan</strong>, Pamukkale Üniversitesi <strong>Bilgisayar Mühendisliği 4. sınıf</strong> öğrencisiyim.
+      Yazılım geliştirme alanında özellikle web uygulamaları üzerinde çalışıyor ve kendimi sürekli geliştirmeye özen gösteriyorum.
+      Bu projeyi hem portföyüme katkı sağlamak hem de kullanıcıların finansal farkındalığını artırmak amacıyla geliştirdim.
+    </p>
+
+    <p style="font-size: 1.1rem;">
+      Geri bildirimleriniz, önerileriniz ya da sadece merhaba demek için aşağıdaki iletişim kanallarından bana ulaşabilirsiniz:
+    </p>
+
+    <ul class="list-unstyled" style="font-size: 1.05rem;">
+      <li><strong>E-posta:</strong> <a href="mailto:babacan-1907@outlook.com.tr">babacan-1907@outlook.com.tr</a></li>
+      <li><strong>Telefon:</strong> +90 553 316 23 52</li>
+    </ul>
+
+    <div class="mt-4 d-flex gap-4 align-items-center">
+      <a href="https://github.com/Babacanibrahim" target="_blank" class="d-flex align-items-center text-decoration-none">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg" width="30" alt="GitHub">
+        <span class="ms-2" style="font-size: 1.2rem;">GitHub</span>
+      </a>
+
+      <a href="https://www.linkedin.com/in/ibrahim-babacan-7842b826a/" target="_blank" class="d-flex align-items-center text-decoration-none">
+        <img src="https://cdn-icons-png.flaticon.com/512/174/174857.png" width="30" alt="LinkedIn">
+        <span class="ms-2" style="font-size: 1.2rem;">LinkedIn</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+{% endblock body %}

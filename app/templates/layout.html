@@ -2,37 +2,56 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Bootstrap CSS (integrity'siz) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-    
-    <title> 
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Bootstrap CSS (integrity'siz) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+
+  <title>
     {% block title %}
     Finans Asistanınız
-    {% endblock  %}
-    </title>
-   
+    {% endblock %}
+  </title>
 
-   {% block head %}
-   
-   {% endblock head %}
-</head>
+  {% block head %}
+  {% endblock head %}
 
-<body>
   <style>
     body {
       background-color: lightgray;
     }
   </style>
+</head>
+
+<!-- 🟡 1. body’ye "min-vh-100 d-flex flex-column" eklendi -->
+<body class="min-vh-100 d-flex flex-column">
 
   {% include "includes/navbar.html" %}
   <br>
-  <div class="container">
-    {% include "includes/messages.html" %}
-    {% block body %}{% endblock body %}
-  </div>
+
+  <!-- 🟡 2. container div'i <main> olarak sarıldı ve "flex-grow-1" eklendi -->
+  <main class="flex-grow-1">
+    <div class="container">
+      {% include "includes/messages.html" %}
+      {% block body %}{% endblock body %}
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <!-- 🟡 3. mt-5 → mt-auto yapıldı -->
+  <footer class="text-center text-lg-start bg-dark text-white mt-auto py-3 shadow-sm">
+    <div class="container text-center">
+      <p class="mb-1">&copy; {{ current_year }} Tüm Hakları Saklıdır.
+        <strong>Kişisel Finans Uygulaması</strong>
+      </p>
+      <p class="mb-1">Bu uygulama <strong>İbrahim Babacan</strong> tarafından geliştirilmiştir.</p>
+      <p class="mb-0">
+        <a href="/about" class="text-white">İletişim</a> |
+        <a href="https://github.com/Babacanibrahim" class="text-white" target="_blank">GitHub</a>
+      </p>
+    </div>
+  </footer>
 
   <!-- jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -43,7 +62,7 @@
   <!-- CKEditor -->
   <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
   <script>
-      CKEDITOR.replace('content');
+    CKEDITOR.replace('content');
   </script>
 
   <!-- Code Prettify -->
@@ -51,12 +70,12 @@
 
   {% if show_modal %}
   <script>
-    // Sayfa yüklendikten sonra modalı aç
     document.addEventListener("DOMContentLoaded", function () {
       $('#passwordModal').modal('show');
     });
   </script>
   {% endif %}
+
 </body>
 
 </html>

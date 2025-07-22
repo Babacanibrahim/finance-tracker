@@ -1,6 +1,6 @@
-from flask import Flask,render_template,flash,redirect,url_for,session,logging,request
+from flask import Flask,render_template,flash,redirect,url_for,session, request
 from flask_sqlalchemy import SQLAlchemy
-from wtforms import Form,StringField,TextAreaField,PasswordField,validators,ValidationError,SelectField,DateField,DecimalField
+from wtforms import StringField, PasswordField, validators, ValidationError, SelectField, DateField, DecimalField
 from passlib.hash import sha256_crypt
 from functools import wraps
 from flask_wtf import FlaskForm
@@ -200,6 +200,12 @@ def about():
 @app.context_processor
 def inject_csrf_token():
     return dict(csrf_token=generate_csrf())
+
+# Güncel Tarih
+@app.context_processor
+def inject_year():
+    return {"current_year": datetime.now().year}
+
 
 #Otomatik User Gönderme
 @app.context_processor
@@ -574,6 +580,7 @@ def edit_income(id):
         income.category_id = form.category.data
         income.date = form.date.data
         db.session.commit()
+        flash("Geliriniz güncellenmiştir.","success")
         return redirect(url_for("income"))
     else:
         flash("BİR HATA OLUŞTU.","danger")
@@ -756,6 +763,7 @@ def edit_expense(id):
         expense.category_id = form.category.data
         expense.date = form.date.data
         db.session.commit()
+        flash("Gider başarıyla güncellendi.","success")
         return redirect(url_for("expense"))
     else:
         flash("BİR HATA OLUŞTU.", "danger")
@@ -828,7 +836,6 @@ def dashboard():
         try:
             state = int((total_expense/total_income)*100)
         except:
-            flash("Gelir bilgisi olmadığı için hesaplama yapılamadı, ancak bu dönemde toplam gideriniz {}".format(total_expense))
             state = None
    
     elif total_income > total_expense:

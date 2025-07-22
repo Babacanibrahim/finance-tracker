@@ -1,4 +1,7 @@
 {% extends "layout.html" %}
+{% block title %}
+Limit Detay
+{% endblock title %}
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/styles/tables.css') }}">
@@ -6,7 +9,9 @@
 
 {% block body %}
 <h2>Bütçe Limitleri</h2>
-<p>Bütçe Tarihleri: {{ budget.start_date }} - {{ budget.end_date }}</p>
+<strong><p>Bütçe Tarihleri: {{ budget.start_date }} - {{ budget.end_date }}</p></strong>
+<hr style="border: none; height: 4px; background-color: #4054aeff; margin: 20px 0; border-radius: 2px;">
+
 
 <table class="table table-bordered">
   <thead>
