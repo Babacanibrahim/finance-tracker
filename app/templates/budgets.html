@@ -5,30 +5,45 @@
 {% endblock head %}
 
 {% block body %}
-<h2>Mevcut Limitleriniz</h2>
+<h2 style="text-align: center;">Mevcut Limitleriniz</h2>
 <br>
 
-<table class="table table-bordered">
+<table class="table table-bordered" style="max-width: 800px; margin: 0 auto;">
   <thead>
     <tr>
+      <th>#</th>
       <th>Mevcut Limitler Tablosu</th>
+      <th>Limit İsmi</th>
       <th>Tarih Aralığı</th>
     </tr>
   </thead>
   {% if budgets %}
   <tbody>
-    {% for item in budgets %}
-      <tr>
-        <td>
-        <a href="{{url_for('view_limit' , id = item.id)}}">Detaylar</a>
-        </td>
-        <td>{{ item.start_date }} - {{ item.end_date }}</td>
-      </tr>
-    {% endfor %}
-  </tbody>
+  {% for item in budgets %}
+    <tr>
+      <td>{{loop.index}}</td>
+      <td style="text-align: center; vertical-align: middle;">
+        <a 
+          href="{{ url_for('view_limit', id=item.id) }}" 
+          style="background-color: #286ca7ff; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; display: inline-block;">
+          Detaylar
+        </a>
+              <td style="text-align: center; vertical-align: middle;"><strong>{{item.name }}</strong></td>
+      </td>
+      <td style="text-align: center; vertical-align: middle;"><strong>{{ item.start_date }} / {{ item.end_date }}</strong></td>
+    </tr>
+  {% endfor %}
+</tbody>
+
   {% else %}
   <tr><td>Henüz bütçe limiti tanımlamamışsınız.</td></tr>
   {% endif %}
   
 </table>
+
+<div style="text-align: center; margin-top: 20px;">
+  <a class="btn btn-success btn-lg" href="{{url_for ('budget_step_1')}}">Limit Ekle</a>
+</div>
+
+
 {% endblock %}
