@@ -55,7 +55,7 @@ Gider İşlemleri
 
   <!-- FİLTRE PANELİ -->
   <div>
-    <form method="GET" action="{{ url_for('expense') }}" class="filter-panel">
+    <form method="GET" action="{{ url_for('expense.expense') }}" class="filter-panel">
 
       <!-- Kategoriler -->
       <h5>Kategoriler</h5>
@@ -164,7 +164,7 @@ Gider İşlemleri
             <td data-label="Gider Tarihi">{{ expense.date.strftime('%d/%m/%Y') }}</td>
             <td data-label="Gider Kategorisi">{{ expense.expense_category.name }}</td>
             <td data-label="Güncelle">
-              <a href="{{ url_for('edit_expense', id=expense.id) }}">
+              <a href="{{ url_for('expense.edit_expense', id=expense.id) }}">
                 <button type="button" class="btn btn-info btn-sm">Güncelle</button>
               </a>
             </td>
@@ -176,7 +176,7 @@ Gider İşlemleri
               <div class="modal fade" id="deleteModal{{ expense.id }}" tabindex="-1" role="dialog" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                   <div class="modal-content">
-                    <form action="{{ url_for('delete_expense', id=expense.id) }}" method="POST">
+                    <form action="{{ url_for('expense.delete_expense', id=expense.id) }}" method="POST">
                       {{ form.csrf_token }}
                       <div class="modal-header">
                         <h5 class="modal-title">Gider Silme Onayı</h5>

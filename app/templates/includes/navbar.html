@@ -94,7 +94,7 @@
 </style>
 
 <nav class="navbar navbar-expand-lg custom-navbar">
-  <a class="navbar-brand" href="/">Babacan Finans</a>
+  <a class="navbar-brand" href="{{ url_for('main.index') }}">Babacan Finans</a>
 
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown"
     aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
@@ -104,7 +104,7 @@
   <div class="collapse navbar-collapse" id="navbarNavDropdown">
     <ul class="navbar-nav">
       <li class="nav-item">
-        <a class="nav-link" href="/about">Hakkımda</a>
+        <a class="nav-link" href="{{ url_for('main.about') }}">Hakkımda</a>
       </li>
     </ul>
 
@@ -117,44 +117,72 @@
           Bütçe Limit Yönetimi
         </a>
         <div class="dropdown-menu" aria-labelledby="budgetDropdown">
-          <a class="dropdown-item" href="/budget_step_1">Yeni Bütçe Limiti Tanımla</a>
-          <a class="dropdown-item" href="/budgets">Tanımlı Bütçe Limitleri</a>
+          <a class="dropdown-item" href="{{ url_for('limits.budget_step_1') }}">Yeni Bütçe Limiti Tanımla</a>
+          <a class="dropdown-item" href="{{ url_for('limits.budgets') }}">Tanımlı Bütçe Limitleri</a>
         </div>
       </li>
 
       <!-- Gelir -->
       <li class="nav-item mr-3">
-        <a class="nav-link" href="/income">Gelir Yönetimi</a>
+        <a class="nav-link" href="{{ url_for('income.income') }}">Gelir Yönetimi</a>
       </li>
 
       <!-- Gider -->
       <li class="nav-item mr-3">
-        <a class="nav-link" href="/expense">Gider Yönetimi</a>
+        <a class="nav-link" href="{{ url_for('expense.expense') }}">Gider Yönetimi</a>
       </li>
 
       <!-- Finans -->
       <li class="nav-item mr-3">
-        <a class="nav-link" href="/dashboard">Finansal Analiz ve Mali Raporlama</a>
+        <a class="nav-link" href="{{ url_for('dashboard.dashboard') }}">Finansal Analiz ve Mali Raporlama</a>
       </li>
+
+     <!-- Bildirim Dropdown -->
+<li class="nav-item dropdown mr-2" style="position: relative;">
+  <a class="nav-link dropdown-toggle" href="#" id="notifDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    <i class="fas fa-bell"></i>
+    {% if notification_count > 0 %}
+      <span style="position: absolute; top: 5px; right: 5px; background: red; color: white; font-size: 12px; border-radius: 50%; padding: 2px 6px;">
+        {{ notification_count }}
+      </span>
+    {% endif %}
+  </a>
+
+  <div class="dropdown-menu dropdown-menu-right p-2" aria-labelledby="notifDropdown" style="min-width: 300px;">
+    {% if notification_list %}
+      {% for notif in notification_list %}
+        <a href="{{ url_for('limits.view_limit', id=notif.budget_id) }}" class="dropdown-item small">
+          <i class="fas fa-exclamation-circle text-danger mr-2"></i>
+          <strong>{{ notif.budget_name }}</strong> bütçenizin
+          <strong>{{ notif.category }}</strong> kategorisinde aşım var veya limite yaklaşmışsınız. (%{{ notif.percent }})
+        </a>
+      {% endfor %}
+    {% else %}
+      <span class="dropdown-item text-muted">Bildirim yok 🎉</span>
+    {% endif %}
+  </div>
+</li>
+
 
       <!-- Profil -->
       <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="color: #ffd369;">
+        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-toggle="dropdown"
+           aria-haspopup="true" aria-expanded="false" style="color: #ffd369;">
           {{ user.name }} {{ user.surname }}
         </a>
         <div class="dropdown-menu" aria-labelledby="userDropdown">
-          <a class="dropdown-item" href="/profile">Profil</a>
-          <a class="dropdown-item" href="/repassword">Şifre Değiştir</a>
-          <a class="dropdown-item logout-item" href="/logout">Çıkış Yap</a>
+          <a class="dropdown-item" href="{{ url_for('auth.profile') }}">Profil</a>
+          <a class="dropdown-item" href="{{ url_for('auth.repassword') }}">Şifre Değiştir</a>
+          <a class="dropdown-item logout-item" href="{{ url_for('auth.logout') }}">Çıkış Yap</a>
         </div>
       </li>
 
       {% else %}
       <li class="nav-item">
-        <a class="nav-link auth-login" href="/login">Giriş Yap</a>
+        <a class="nav-link auth-login" href="{{ url_for('auth.login') }}">Giriş Yap</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link auth-register" href="/register">Kayıt Ol</a>
+        <a class="nav-link auth-register" href="{{ url_for('auth.register') }}">Kayıt Ol</a>
       </li>
       {% endif %}
     </ul>

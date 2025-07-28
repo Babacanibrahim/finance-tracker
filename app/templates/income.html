@@ -55,7 +55,7 @@ Gelir İşlemleri
 
   <!-- FİLTRE PANELİ -->
   <div>
-    <form method="GET" action="{{ url_for('income') }}" class="filter-panel">
+    <form method="GET" action="{{ url_for('income.income') }}" class="filter-panel">
 
       <!-- Kategoriler -->
       <h5>Kategoriler</h5>
@@ -164,7 +164,7 @@ Gelir İşlemleri
             <td data-label="Gelir Tarihi">{{ income.date.strftime('%d/%m/%Y') }}</td>
             <td data-label="Gelir Kategorisi">{{ income.income_category.name }}</td>
             <td data-label="Güncelle">
-              <a href="{{ url_for('edit_income', id=income.id) }}">
+              <a href="{{ url_for('income.edit_income', id=income.id) }}">
                 <button type="button" class="btn btn-info btn-sm">Güncelle</button>
               </a>
             </td>
@@ -176,7 +176,7 @@ Gelir İşlemleri
               <div class="modal fade" id="deleteModal{{ income.id }}" tabindex="-1" role="dialog" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                   <div class="modal-content">
-                    <form action="{{ url_for('delete_income', id=income.id) }}" method="POST">
+                    <form action="{{ url_for('income.delete_income', id=income.id) }}" method="POST">
                       {{ form.csrf_token }}
                       <div class="modal-header">
                         <h5 class="modal-title">Gelir Silme Onayı</h5>

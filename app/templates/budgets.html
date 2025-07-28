@@ -24,7 +24,7 @@
       <td>{{loop.index}}</td>
       <td style="text-align: center; vertical-align: middle;">
         <a 
-          href="{{ url_for('view_limit', id=item.id) }}" 
+          href="{{ url_for('limits.view_limit', id=item.id) }}" 
           style="background-color: #286ca7ff; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; display: inline-block;">
           Detaylar
         </a>
@@ -42,7 +42,7 @@
 </table>
 
 <div style="text-align: center; margin-top: 20px;">
-  <a class="btn btn-success btn-lg" href="{{url_for ('budget_step_1')}}">Limit Ekle</a>
+  <a class="btn btn-success btn-lg" href="{{url_for ('limits.budget_step_1')}}">Limit Ekle</a>
 </div>
 
 

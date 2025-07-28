@@ -5,8 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Bootstrap CSS (integrity'siz) -->
+  <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+
+  <!-- 🔔 Font Awesome (Bildirim ikonu için gerekli) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <title>
     {% block title %}
@@ -15,7 +18,7 @@
   </title>
 
   {% block head %}
-  {% endblock head %}
+  {% endblock %}
 
   <style>
     body {
@@ -24,34 +27,31 @@
   </style>
 </head>
 
-<!-- 🟡 1. body’ye "min-vh-100 d-flex flex-column" eklendi -->
 <body class="min-vh-100 d-flex flex-column">
 
   {% include "includes/navbar.html" %}
   <br>
 
-  <!-- 🟡 2. container div'i <main> olarak sarıldı ve "flex-grow-1" eklendi -->
-  <main class="flex-grow-1">
+  <main class="flex-grow-1 mb-4">
     <div class="container">
       {% include "includes/messages.html" %}
-      {% block body %}{% endblock body %}
+      {% block body %}{% endblock %}
     </div>
   </main>
 
-  <!-- FOOTER -->
-  <!-- 🟡 3. mt-5 → mt-auto yapıldı -->
-  <footer class="text-center text-lg-start bg-dark text-white mt-auto py-3 shadow-sm">
-    <div class="container text-center">
-      <p class="mb-1">&copy; {{ current_year }} Tüm Hakları Saklıdır.
-        <strong>Kişisel Finans Uygulaması</strong>
-      </p>
-      <p class="mb-1">Bu uygulama <strong>İbrahim Babacan</strong> tarafından geliştirilmiştir.</p>
-      <p class="mb-0">
-        <a href="/about" class="text-white">İletişim</a> |
-        <a href="https://github.com/Babacanibrahim" class="text-white" target="_blank">GitHub</a>
-      </p>
-    </div>
-  </footer>
+<footer class="text-center text-lg-start bg-dark text-white mt-auto py-3 shadow-sm" style="margin-top: 40px;">
+  <div class="container text-center">
+    <p class="mb-1">&copy; {{ current_year }} Tüm Hakları Saklıdır.
+      <strong>Kişisel Finans Uygulaması</strong>
+    </p>
+    <p class="mb-1">Bu uygulama <strong>İbrahim Babacan</strong> tarafından geliştirilmiştir.</p>
+    <p class="mb-0">
+      <a href="/about" class="text-white">Hakkımda</a> |
+      <a href="https://github.com/Babacanibrahim" class="text-white" target="_blank">GitHub</a>
+    </p>
+  </div>
+</footer>
+
 
   <!-- jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

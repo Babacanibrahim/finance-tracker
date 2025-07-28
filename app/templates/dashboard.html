@@ -7,7 +7,7 @@
 
 
 <!-- Tarih Aralığı Seçimi -->
-<form method="GET" action="{{ url_for('dashboard') }}">
+<form method="GET" action="{{ url_for('dashboard.dashboard') }}">
   <div class="form-group">
     <select name="date_range" class="form-control w-auto" onchange="this.form.submit()">
       <option value="all" {% if selected_range == 'all' %}selected{% endif %}>Tümü</option>
