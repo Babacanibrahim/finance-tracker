@@ -83,15 +83,6 @@ python run.py
 
 ---
 
-## 📦 Geliştirilecekler
-
-- [ ] PDF veya Excel dışa aktarma
-- [ ] RESTful API desteği (mobil uygulama için)
-- [ ] Karanlık tema seçeneği
-- [ ] Takvim entegrasyonu (gelir-gider takibi için)
-- [ ] Gelir/giderleri QR kod ile içe/dışa aktar
-
----
 
 ## 📄 Lisans
 
@@ -102,5 +93,5 @@ Bu proje bireysel eğitim amaçlı geliştirilmiştir. Lisans belirtilmemiştir.
 ## ✨ Geliştirici
 
 **İbrahim Babacan**  
-📧 [E-posta ile ulaş](mailto:ibrahim@example.com)  
-🌐 [LinkedIn Profilin (opsiyonel)](https://www.linkedin.com/in/ibrahim-babacan)
+📧 [E-posta ile ulaş](mailto:babacan-1907@outlook.com.tr)  
+🌐 [LinkedIn Profilim (www.linkedin.com/in/20ibrahimbabacan20)
