@@ -8,9 +8,11 @@ from app.forms import (
 from app.models import User
 from app import db
 
+
 auth_bp = Blueprint("auth", __name__)
 
 
+# Profil Üzerinden Şifre Değiştirme
 @auth_bp.route("/repassword", methods=["GET", "POST"])
 @login_required
 def repassword():
@@ -33,7 +35,7 @@ def repassword():
         modal_action=url_for("auth.change_password")
     )
 
-
+# Profil Düzenleme
 @auth_bp.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
@@ -83,7 +85,7 @@ def profile():
 
     return render_template("profile.html", form=form)
 
-
+#Şifre değiştirme
 @auth_bp.route("/change_password", methods=["GET", "POST"])
 @login_required
 def change_password():
@@ -113,7 +115,7 @@ def change_password():
         modal_action=url_for("auth.change_password")
     )
 
-
+# Şifremi unuttum
 @auth_bp.route("/forgotpassword", methods=["GET", "POST"])
 def forgot_password():
     form = ForgotPassword()
@@ -206,12 +208,15 @@ def register():
             )
             db.session.add(new_user)
             db.session.commit()
-            flash("Kayıt başarılı! Giriş yapabilirsiniz.", "success")
-            return redirect(url_for("auth.login"))
+            session["logged_in"] = True
+            session["user_id"] = new_user.id
+            flash("Kayıt başarılı! Hoş geldiniz.", "success")
+            return redirect(url_for("main.index"))
+   
     else:
         return render_template("register.html", form=form)
 
-
+# Çıkış Yap
 @auth_bp.route("/logout")
 @login_required
 def logout():
