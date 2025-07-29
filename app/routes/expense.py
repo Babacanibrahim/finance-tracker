@@ -9,6 +9,7 @@ from app.utils import login_required
 
 expense_bp = Blueprint("expense", __name__)
 
+# Harcama Sayfası
 @expense_bp.route("/expense", methods=["GET", "POST"])
 @login_required
 def expense():
@@ -19,6 +20,7 @@ def expense():
     ).all()
     form.category.choices = [(c.id, c.name) for c in categories]
 
+    # Harcama Ekleme
     if request.method == "POST" and form.validate():
         new_expense = Expense(
             category_id=form.category.data,
@@ -31,6 +33,7 @@ def expense():
         flash("Harcamanız başarıyla kaydedildi.", "success")
         return redirect(url_for("expense.expense"))
 
+    # Filtreleme
     selected_categories = request.args.getlist("categories[]")
     selected_dates = request.args.getlist("dates[]")
     selected_amounts = request.args.getlist("amounts[]")
@@ -55,9 +58,11 @@ def expense():
             return now - timedelta(days=days), now
         return None, None
 
+    # Kategori filtreleme
     if selected_categories:
         query = query.filter(Expense.category_id.in_(selected_categories))
 
+    # Miktar filtreleme
     if selected_amounts:
         amount_filters = []
         for r in selected_amounts:
@@ -68,6 +73,7 @@ def expense():
                 amount_filters.append(and_(Expense.amount >= min_val, Expense.amount <= max_val))
         query = query.filter(or_(*amount_filters))
 
+    # Tarih filtreleme
     if selected_dates:
         date_filters = []
         for r in selected_dates:
@@ -77,8 +83,10 @@ def expense():
         if date_filters:
             query = query.filter(or_(*date_filters))
 
+    # Toplam gider
     sum_expenses = query.with_entities(func.sum(Expense.amount)).scalar() or 0
 
+    # Sıralama
     if order_by == "amount_desc":
         query = query.order_by(Expense.amount.desc())
     elif order_by == "amount_asc":
@@ -126,6 +134,7 @@ def expense():
                            selected_dates=selected_dates)
 
 
+# Gider Düzenleme
 @expense_bp.route("/edit_expense/<int:id>", methods=["GET", "POST"])
 @login_required
 def edit_expense(id):
@@ -154,7 +163,7 @@ def edit_expense(id):
     flash("Bir hata oluştu.", "danger")
     return render_template("edit_expense.html", form=form, expense=expense)
 
-
+# Gider Silme
 @expense_bp.route("/delete/<int:id>", methods=["POST"])
 @login_required
 def delete_expense(id):

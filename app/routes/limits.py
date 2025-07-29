@@ -95,7 +95,7 @@ def budget_step_2():
 @limits_bp.route("/budgets")
 @login_required
 def budgets():
-    budgets = Budget.query.filter_by(user_id=session["user_id"]).all()
+    budgets = Budget.query.filter_by(user_id=session["user_id"]).order_by(Budget.id.desc()).all()
     return render_template("budgets.html", budgets=budgets)
 
 # Bütçe düzenleme tarih ve isim belirleme
@@ -190,6 +190,7 @@ def edit_limit_2():
 
     return render_template("edit_limit_2.html", form=form, categories=categories, budget=budget, existing_limits={})
 
+# Limit Silme
 @limits_bp.route("/delete_limit/<int:id>", methods=["POST"])
 @login_required
 def delete_limit(id):
@@ -202,6 +203,7 @@ def delete_limit(id):
         flash("Yetkisiz işlem veya kayıt bulunamadı.", "danger")
     return redirect(url_for("limits.budgets"))
 
+# Limit detay
 @limits_bp.route("/view/<int:id>", methods=["GET"])
 @login_required
 def view_limit(id):

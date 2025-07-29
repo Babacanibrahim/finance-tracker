@@ -10,6 +10,7 @@ from app.utils import login_required
 income_bp = Blueprint("income", __name__)
 
 
+# Gelir Sayfası
 @income_bp.route("/income", methods=["GET", "POST"])
 @login_required
 def income():
@@ -17,6 +18,7 @@ def income():
     categories = Income_Category.query.all()
     form.category.choices = [(c.id, c.name) for c in categories]
 
+    # Gelir Ekleme
     if request.method == "POST" and form.validate():
         new_income = Income(
             category_id=form.category.data,
@@ -130,7 +132,7 @@ def income():
         selected_amounts=selected_amounts
     )
 
-
+# Gelir Düzenleme
 @income_bp.route("/edit_income/<int:id>", methods=["GET", "POST"])
 @login_required
 def edit_income(id):
@@ -156,7 +158,7 @@ def edit_income(id):
     flash("Bir hata oluştu.", "danger")
     return render_template("edit_income.html", form=form, income=income)
 
-
+# Gelir Silme
 @income_bp.route("/delete/<int:id>", methods=["POST"])
 @login_required
 def delete_income(id):
