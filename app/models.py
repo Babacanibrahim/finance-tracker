@@ -13,6 +13,7 @@ class User(db.Model):
     expenses = db.relationship('Expense', backref='user', lazy=True)
     allow_notifications = db.Column(db.Boolean, default=True)
 
+
 class Income_Category(db.Model):
     __tablename__ = "income_category"
     id = db.Column(db.Integer, primary_key=True)

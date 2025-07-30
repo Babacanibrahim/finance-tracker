@@ -80,31 +80,32 @@
 
   .navbar-toggler-icon {
     background-image: url("data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 30 30' 
-      xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgba%28255,255,255, 0.7%29' 
-      stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 
-      15h22M4 23h22'/%3E%3C/svg%3E");
-  }
+ xmlns='http://www.w3.org/2000/svg' %3E%3Cpath stroke='rgba%28255,255,255, 0.7%29'
+        stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 
+ 15h22M4 23h22'/%3E%3C/svg%3E");
 
-  /* Tema Toggle Button */
-  #themeToggle {
-    background: transparent;
-    border: none;
-    color: #f0f0f0;
-    font-size: 1.3rem;
-    cursor: pointer;
-    margin-left: 1rem;
-  }
-
-  #themeToggle:hover {
-    color: #ffd369;
-  }
-
-  @media (max-width: 576px) {
-    .custom-navbar .nav-link {
-      padding: 0.6rem 0.8rem;
-      font-size: 1rem;
     }
-  }
+
+    /* Tema Toggle Button */
+    #themeToggle {
+      background: transparent;
+      border: none;
+      color: #f0f0f0;
+      font-size: 1.3rem;
+      cursor: pointer;
+      margin-left: 1rem;
+    }
+
+    #themeToggle:hover {
+      color: #ffd369;
+    }
+
+    @media (max-width: 576px) {
+      .custom-navbar .nav-link {
+        padding: 0.6rem 0.8rem;
+        font-size: 1rem;
+      }
+    }
 </style>
 
 <nav class="navbar navbar-expand-lg custom-navbar">
@@ -134,7 +135,8 @@
       {% if "logged_in" in session %}
       <!-- Bütçe Limit -->
       <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" id="budgetDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <a class="nav-link dropdown-toggle" href="#" id="budgetDropdown" data-toggle="dropdown" aria-haspopup="true"
+          aria-expanded="false">
           Bütçe Limit Yönetimi
         </a>
         <div class="dropdown-menu" aria-labelledby="budgetDropdown">
@@ -160,10 +162,12 @@
 
       <!-- Bildirim Dropdown -->
       <li class="nav-item dropdown mr-2" style="position: relative;">
-        <a class="nav-link dropdown-toggle" href="#" id="notifDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <a class="nav-link dropdown-toggle" href="#" id="notifDropdown" role="button" data-toggle="dropdown"
+          aria-haspopup="true" aria-expanded="false">
           <i class="fas fa-bell"></i>
           {% if notification_count > 0 %}
-          <span style="position: absolute; top: 5px; right: 5px; background: red; color: white; font-size: 12px; border-radius: 50%; padding: 2px 6px;">
+          <span
+            style="position: absolute; top: 5px; right: 5px; background: red; color: white; font-size: 12px; border-radius: 50%; padding: 2px 6px;">
             {{ notification_count }}
           </span>
           {% endif %}
@@ -171,23 +175,67 @@
 
         <div class="dropdown-menu dropdown-menu-right p-2" aria-labelledby="notifDropdown" style="min-width: 300px;">
           {% if notification_list %}
-            {% for notif in notification_list %}
-              <a href="{{ url_for('limits.view_limit', id=notif.budget_id) }}" class="dropdown-item small">
-                <i class="fas fa-exclamation-circle text-danger mr-2"></i>
-                <strong>{{ notif.budget_name }}</strong> bütçenizin
-                <strong>{{ notif.category }}</strong> kategorisinde aşım var veya limite yaklaşmışsınız. (%{{ notif.percent }})
-              </a>
-            {% endfor %}
+          {% for notif in notification_list %}
+          <a href="{{ url_for('notifications.mark_notification_read', budget_id=notif.budget_id, category_id=notif.category_id) }}"
+            class="dropdown-item small">
+            <i class="fas fa-exclamation-circle text-danger mr-2"></i>
+            <strong>{{ notif.budget_name }}</strong> bütçenizin
+            <strong>{{ notif.category }}</strong> kategorisinde aşım var veya limite yaklaşmışsınız. (%{{ notif.percent
+            }})
+          </a>
+          {% endfor %}
+          <div class="dropdown-divider"></div>
+          <button id="markAllReadBtn" class="dropdown-item text-center text-primary font-weight-bold" type="button">
+            <i class="fas fa-check-double mr-1"></i> Tümünü Okundu Olarak İşaretle
+          </button>
           {% else %}
-            <span class="dropdown-item text-muted">Bildirim yok 🎉</span>
+          <span class="dropdown-item text-muted">Bildirim yok 🎉</span>
           {% endif %}
         </div>
       </li>
 
+      <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          const markAllBtn = document.getElementById("markAllReadBtn");
+
+          if (markAllBtn) {
+            markAllBtn.addEventListener("click", function () {
+              // Bildirim id'lerini çıkar, backend'e JSON olarak yolla
+              const notifIds = [
+                {% for notif in notification_list %}
+          "{{ notif.budget_id }}-{{ notif.category_id }}",
+              {% endfor %}
+      ];
+
+          fetch("{{ url_for('notifications.mark_all_read') }}", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({ notif_ids: notifIds })
+          })
+            .then(response => {
+              if (response.ok) {
+                // Başarılı olursa sayfayı yenile
+                location.reload();
+              } else {
+                alert("Bildirimleri okundu olarak işaretlerken hata oluştu.");
+              }
+            })
+            .catch(() => alert("İşlem başarısız oldu."));
+        });
+  }
+});
+      </script>
+
+
+
+
       <!-- Profil -->
       <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-toggle="dropdown"
-           aria-haspopup="true" aria-expanded="false" style="color: #ffd369;">
+        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-toggle="dropdown" aria-haspopup="true"
+          aria-expanded="false" style="color: #ffd369;">
           {{ user.name }} {{ user.surname }}
         </a>
         <div class="dropdown-menu" aria-labelledby="userDropdown">
