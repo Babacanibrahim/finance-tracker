@@ -1,10 +1,11 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+import os
+from dotenv import load_dotenv 
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = "babacanfinans"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///finance_tracker.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config.from_object("app.config.Config")
 
 db = SQLAlchemy(app)
 
